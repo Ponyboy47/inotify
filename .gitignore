@@ -1,0 +1,9 @@
+# Xcode and swift build directories/files
+.DS_Store
+/.build
+/Packages
+/*.xcodeproj
+/Package.pins
+
+# Vim swap files
+.*.sw[po]
