@@ -1,18 +1,12 @@
 import Cinotify
 
-/*
-extension inotify_event {
-    func readEvents() -> 
-}
-*/
-
 public typealias FileDescriptor = Int32
 public typealias WatchDescriptor = Int32
 public typealias FilePath = String
 public typealias FileSystemEventType = UInt32
 
 public enum FileSystemEvent: FileSystemEventType {
-	case access             = 0x00000001
+    case access             = 0x00000001
     case modify             = 0x00000002
     case attrib             = 0x00000004
 
@@ -53,33 +47,37 @@ public enum InotifyError: Error {
 
 public struct Inotify {
     private let fileDescriptor: FileDescriptor
-    private var watchingDescriptors: [(WatchDescriptor, FileSystemEventType)] = []
+    private var watchingDescriptors: [(WatchDescriptor, FilePath, FileSystemEventType)] = []
 
-    public init?() {
+    public init() throws {
         fileDescriptor = inotify_init()
         guard fileDescriptor > 0 else {
-            throw failedInitialize
+            throw InotifyError.failedInitialize
         }
     }
 
-    public convenience init?(watching paths: [FilePath], for events: [FileSystemEvent]? = nil) {
+    public init(watching paths: [FilePath], for events: [FileSystemEvent]? = nil) throws {
         try self.init()
         try self.watch(paths: paths, for: events)
     }
 
-    public convenience init?(watching paths: [FilePath], for event: FileSystemEvent = .allEvents) {
+    public init(watching paths: [FilePath], for event: FileSystemEvent = .allEvents) throws {
         try self.init(watching: paths, for: [event])
     }
 
-    public convenience init?(watching path: FilePath, for events: [FileSystemEvent]? = nil) {
+    public init(watching path: FilePath, for events: [FileSystemEvent]? = nil) throws {
         try self.init(watching: [path], for: events)
     }
 
-    public convenience init?(watching path: FilePath, for event: FileSystemEvent = .allEvents) {
+    public init(watching path: FilePath, for event: FileSystemEvent = .allEvents) throws {
         try self.init(watching: [path], for: [event])
-   }
+    }
 
-    public func watch(paths: [FilePath], for events: [FileSystemEvent]?) throws {
+    public mutating func watch(path: FilePath, for event: FileSystemEvent = .allEvents) throws {
+        try self.watch(path: path, for: [event])
+    }
+
+    public mutating func watch(path: FilePath, for events: [FileSystemEvent]?) throws {
         var flags: FileSystemEventType = 0
         if let es = events {
             for e in es {
@@ -89,14 +87,55 @@ public struct Inotify {
 
         // If the events array was nil or empty
         if flags == 0 {
-            flags = FileSystemEvent.allEvents
+            flags = FileSystemEvent.allEvents.rawValue
         }
 
-        for path in paths {
-            guard let watchDescriptor = inotify_add_watch(self.fileDescriptor, path, flags), watchDescriptor > 0  else {
-                throw failedWatch(path, flags)
-            }
-            watchingDescriptors.append(watchDescriptor)
+        let watchDescriptor = inotify_add_watch(self.fileDescriptor, path, flags)
+
+        guard watchDescriptor > 0 else {
+            throw InotifyError.failedWatch(path, flags)
         }
+        watchingDescriptors.append((watchDescriptor, path, flags))
+    }
+
+    public mutating func watch(paths: [FilePath], for events: [FileSystemEvent]?) throws {
+        for path in paths {
+            try self.watch(path: path, for: events)
+        }
+    }
+
+    public mutating func unwatch(path p: FilePath) {
+        guard let index = self.watchingDescriptors.index(where: { (_, path, _) in
+            return path == p
+        }) else {
+            return
+        }
+
+        let (descriptor, _, _) = self.watchingDescriptors[index]
+        inotify_rm_watch(self.fileDescriptor, descriptor)
+        self.watchingDescriptors.remove(at: index)
+    }
+
+    public mutating func unwatch(paths: [FilePath]) {
+        for path in paths {
+            self.unwatch(path: path)
+        }
+    }
+}
+
+/*
+    This extension is so that we can actually get event names from the struct. Based off the spec that the inotify_event struct is:
+
+    struct inotify_event {
+        int      wd;
+        uint32_t mask;
+        uint32_t cookie;
+        uint32_t len;
+        char     name[];
+    }
+*/
+public extension inotify_event {
+    var name: String? {
+        return nil
     }
 }
