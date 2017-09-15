@@ -5,6 +5,7 @@ import PackageDescription
 let package = Package(
     name: "inotify",
     dependencies: [
-        .Package(url: "https://github.com/Ponyboy47/Cinotify.git", majorVersion: 2)
+        .Package(url: "https://github.com/Ponyboy47/Cinotify.git", majorVersion: 2),
+        .Package(url: "https://github.com/Ponyboy47/ErrNo.git", majorVersion: 0, minor: 1)
     ]
 )
