@@ -5,6 +5,26 @@ import ErrNo
 public typealias FileDescriptor = Int32
 /// The type used for watch descriptors (based off inotify)
 public typealias WatchDescriptor = Int32
+/// The type used for inotify flags
+public typealias InotifyFlagType = Int32
+public enum InotifyFlag: InotifyFlagType {
+    /**
+        When the none flag is used, the behavior will be the same as the
+        default initializer
+    */
+    case none
+    /**
+        Set the O_NONBLOCK file status flag on the new open file description.
+        Using this flag saves extra calls to fcntl(2) to acheive the same result
+    */
+    case nonBlock
+    /**
+        Set the close-on-exec (FD_CLOEXEC) flag on the new file descriptor.
+        See the description of the O_CLOEXEC flag in open(2) for reasons why this
+        may be useful
+    */
+    case closeOnExec
+}
 /// The type used for paths (based off inotify)
 public typealias FilePath = String
 /// The type used for file system events (based off inotify)
@@ -39,6 +59,49 @@ public struct Inotify {
             }
             throw InotifyError.InitError.unknownInitFailure
         }
+    }
+
+    /**
+        Initializer with inotify flags. Calls inotify_init1(flags)
+
+        - Parameter flags: An array of flags to pass to inotify_init1(flags)
+
+        - Throws: When the file descriptor returned by inotify_init1() is less than 0
+    */
+    public init(flags: [InotifyFlag]) throws {
+        var initFlags: InotifyFlagType = 0
+        for flag in flags {
+            initFlags |= flag.rawValue
+        }
+        fileDescriptor = inotify_init1(initFlags)
+        guard fileDescriptor >= 0 else {
+            if let error = lastError() {
+                switch error {
+                case .EINVAL:
+                    throw InotifyError.InitError.invalidInitFlag(initFlags)
+                case .EMFILE:
+                    throw InotifyError.InitError.localLimitReached
+                case .ENFILE:
+                    throw InotifyError.InitError.systemLimitReached
+                case .ENOMEM:
+                    throw InotifyError.noKernelMemory
+                default:
+                    throw InotifyError.InitError.unknownInitFailure
+                }
+            }
+            throw InotifyError.InitError.unknownInitFailure
+        }
+    }
+
+    /**
+        Initializer with an inotify flag. Calls inotify_init1(flags)
+
+        - Parameter flag: An single flag to pass to inotify_init1(flags)
+
+        - Throws: When the file descriptor returned by inotify_init1() is less than 0
+    */
+    public init(flag: InotifyFlag) throws {
+        try self.init(flags: [flag])
     }
 
     /**

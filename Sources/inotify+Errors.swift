@@ -8,7 +8,7 @@ public enum InotifyError: Error {
     /// Errors specific to initialization
     public enum InitError: Error {
         /// An invalid flag value was specified in flags (EINVAL errno)
-        case invalidInitFlag
+        case invalidInitFlag(InotifyFlagType)
         /**
             Two possibilities (EMFILE errno):
             1. The user limit on the total number of inotify instances has been reached
