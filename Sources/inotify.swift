@@ -1,4 +1,5 @@
 import Cinotify
+import ErrNo
 
 /// The type used for file descriptors (based off inotify)
 public typealias FileDescriptor = Int32
@@ -11,19 +12,75 @@ public typealias FileSystemEventType = UInt32
 
 /// Error enum for Inotify
 public enum InotifyError: Error {
-    /// Did not get a valid file descriptor from inotify_init()
-    case failedInitialize
-    /// No events were listed to watch
-    case noEvents
-    /**
-        An error occured adding a watcher for the path with the event mask
-        (using inotify_add_watch(fd, path, mask))
-    */
-    case failedWatch(FilePath, FileSystemEventType)
-    /// Could not find the path to unwatch in the array of paths we are currently watching
-    case unwatchPathNotFound(FilePath)
-    /// One of the file descriptors was invalid when attempting to unwatch the path
-    case failedUnwatch(FilePath)
+    /// Insufficient kernel memory was available (ENOMEM errno)
+    case noKernelMemory
+    /// The given inotify file descriptor is not valid (EBADF errno)
+    case badFileDescriptor(FileDescriptor)
+
+    /// Errors specific to initialization
+    public enum InitError: Error {
+        /// An invalid flag value was specified in flags (EINVAL errno)
+        case invalidInitFlag
+        /**
+            Two possibilities (EMFILE errno):
+            1. The user limit on the total number of inotify instances has been reached
+            2. The per-process limit ton the number of open file descriptors has been reached
+        */
+        case localLimitReached
+        /// The system-wide limit on the total number of open files has been reached (ENFILE errno)
+        case systemLimitReached
+        /**
+            Did not receive a valid inotify file descriptor and we were unable
+            to identify why using the errno
+        */
+        case unknownInitFailure
+    }
+
+    /// Errors specific to adding new watchers
+    public enum WatchError: Error {
+        /// Read access to the fiven file is not permitted (EACCES errno)
+        case noReadAccess(FilePath)
+        /// The path points outside of the process's accessible address space (EFAULT errno)
+        case pathNotAccessible(FilePath)
+        /**
+            The given event mask does not contain valid events; or the file descriptor is not an 
+            inotify file descriptor (EINVAL errno)
+        */
+        case invalidMask_OR_FileDescriptor(FileSystemEventType, FileDescriptor)
+        /// The path is too long (ENAMETOOLONG errno)
+        case pathTooLong(FilePath)
+        /// A directory component in the path does not exist or is a broken symbolic link (ENOENT errno)
+        case invalidPath(FilePath)
+        /// Insufficient kernel memory was available (ENOMEM errno)
+        case noKernelMemory(FilePath)
+        /**
+            The user limit on the total number of inotify watches was reached or the kernel failed to
+            allocate a needed resource (ENOSPC errno)
+        */
+        case limitReached(FilePath)
+        /// No events were listed to watch
+        case noEvents
+        /**
+            Did not receive a valid watch descriptor and we were unable
+            to identify why using the errno
+        */
+        case unknownWatchFailure(FilePath, FileSystemEventType)
+    }
+
+    public enum UnwatchError: Error {
+        /**
+            The given watch descriptor is not valid; or the file descriptor is not an inotify file 
+            descriptor (EINVAL errno)
+        */
+        case invalidWatch_OR_FileDescriptor(WatchDescriptor, FileDescriptor)
+        /// Could not find the path to unwatch in the array of paths we are currently watching
+        case unwatchPathNotFound(FilePath)
+        /**
+            Did not receive a valid return value and we were unable to
+            identify why using the errno
+        */
+        case unknownUnwatchFailure(FilePath)
+    }
 }
 
 /// A high level struct for interacting with inotify APIs
@@ -41,7 +98,19 @@ public struct Inotify {
     public init() throws {
         fileDescriptor = inotify_init()
         guard fileDescriptor >= 0 else {
-            throw InotifyError.failedInitialize
+            if let error = lastError() {
+                switch error {
+                case .EMFILE:
+                    throw InotifyError.InitError.localLimitReached
+                case .ENFILE:
+                    throw InotifyError.InitError.systemLimitReached
+                case .ENOMEM:
+                    throw InotifyError.noKernelMemory
+                default:
+                    throw InotifyError.InitError.unknownInitFailure
+                }
+            }
+            throw InotifyError.InitError.unknownInitFailure
         }
     }
 
@@ -114,7 +183,7 @@ public struct Inotify {
     */
     public mutating func watch(path: FilePath, for events: [FileSystemEvent]) throws {
         guard !events.isEmpty else {
-            throw InotifyError.noEvents
+            throw InotifyError.WatchError.noEvents
         }
 
         var flags: FileSystemEventType = 0
@@ -125,7 +194,29 @@ public struct Inotify {
         let watchDescriptor = inotify_add_watch(self.fileDescriptor, path, flags)
 
         guard watchDescriptor >= 0 else {
-            throw InotifyError.failedWatch(path, flags)
+            if let error = lastError() {
+                switch error {
+                case .EACCES:
+                    throw InotifyError.WatchError.noReadAccess(path)
+                case .EBADF:
+                    throw InotifyError.badFileDescriptor(self.fileDescriptor)
+                case .EFAULT:
+                    throw InotifyError.WatchError.pathNotAccessible(path)
+                case .EINVAL:
+                    throw InotifyError.WatchError.invalidMask_OR_FileDescriptor(flags, self.fileDescriptor)
+                case .ENAMETOOLONG:
+                    throw InotifyError.WatchError.pathTooLong(path)
+                case .ENOENT:
+                    throw InotifyError.WatchError.invalidPath(path)
+                case .ENOMEM:
+                    throw InotifyError.WatchError.noKernelMemory(path)
+                case .ENOSPC:
+                    throw InotifyError.WatchError.limitReached(path)
+                default:
+                    throw InotifyError.WatchError.unknownWatchFailure(path, flags)
+                }
+            }
+            throw InotifyError.WatchError.unknownWatchFailure(path, flags)
         }
         watchingDescriptors.append((watchDescriptor, path, flags))
     }
@@ -171,14 +262,24 @@ public struct Inotify {
         guard let index = self.watchingDescriptors.index(where: { (_, path, _) in
             return path == p
         }) else {
-            throw InotifyError.unwatchPathNotFound(p)
+            throw InotifyError.UnwatchError.unwatchPathNotFound(p)
         }
 
         let (descriptor, _, _) = self.watchingDescriptors[index]
         // This really shouldn't ever throw. The only way this throws is if the
         // inotify or watch descriptor is invalid.
         guard inotify_rm_watch(self.fileDescriptor, descriptor) == 0 else {
-            throw InotifyError.failedUnwatch(p)
+            if let error = lastError() {
+                switch error {
+                case .EBADF:
+                    throw InotifyError.badFileDescriptor(self.fileDescriptor)
+                case .EINVAL:
+                    throw InotifyError.UnwatchError.invalidWatch_OR_FileDescriptor(descriptor, self.fileDescriptor)
+                default:
+                    throw InotifyError.UnwatchError.unknownUnwatchFailure(p)
+                }
+            }
+            throw InotifyError.UnwatchError.unknownUnwatchFailure(p)
         }
         self.watchingDescriptors.remove(at: index)
     }
