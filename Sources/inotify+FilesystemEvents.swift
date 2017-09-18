@@ -1,9 +1,11 @@
+import Cinotify
+
 /// An enum with all the possible events for which inotify can watch
-public enum FileSystemEvent: FileSystemEventType {
+public enum FileSystemEvent {
     /// The file was accessed (e.g. read(2), execve(2))
-    case access             = 0x00000001
+    case access
     /// The file was modified (e.g. write(2), truncate(2))
-    case modify             = 0x00000002
+    case modify
     /**
         Metadata changed
             - Permissions (e.g. chmod(2))
@@ -12,28 +14,28 @@ public enum FileSystemEvent: FileSystemEventType {
             - Link Count (e.g. link(2), unlink(2))
             - User/Group ID (e.g. chown(2))
     */
-    case attrib             = 0x00000004
+    case attribute
 
     /// The file opened for writing was closed
-    case closeWrite         = 0x00000008
+    case closeWrite
     /// The file or directory not opened for writing was closed
-    case closeNoWrite       = 0x00000010
+    case closeNoWrite
     /// A file or directory was closed (either for writing or not for writing)
-    case close              = 0x00000018
+    case close
 
     /// A file or directory was opened
-    case open               = 0x00000020
+    case open
     /// A file was moved from a watched directory
-    case movedFrom          = 0x00000040
+    case movedFrom
     /// A file was move into a watched directory
-    case movedTo            = 0x00000080
+    case movedTo
     /// A file was moved from or into a watched directory
-    case move               = 0x000000C0
+    case moved
 
     /// A file or directory was created within a watched directory
-    case create             = 0x00000100
+    case create
     /// A file or directory was deleted within a watched directory
-    case delete             = 0x00000200
+    case delete
     /**
         The watched file or directory was deleted
             Also occurs if an object is moved to another filesystem since mv(1)
@@ -41,29 +43,29 @@ public enum FileSystemEvent: FileSystemEventType {
             In addition, an ignored event will be subsequently generated for
                 the watch descriptor
     */
-    case deleteSelf         = 0x00000400
+    case deleteSelf
     /// The watched file or directory was moved
-    case moveSelf           = 0x00000800
+    case moveSelf
 
     /**
         The filesystem containing the watched object was unmounted
             In addition, an ignored event will subsequently be generated for
             the watch descriptor
     */
-    case unmount            = 0x00002000
+    case unmount
     /// The event queue overflowed. The watch descriptor will be -1 for the event
-    case queueOverflow      = 0x00004000
+    case queueOverflow
     /**
         The watch was explicitly removed through inotify_rm_watch or
             automatically because the file was deleted or the filesystem was
             unmounted
     */
-    case ignored            = 0x00008000
+    case ignored
 
     /// Only watch the path for an event if it is a directory
-    case onlyDir            = 0x01000000
+    case onlyDirectory
     /// Don't follow symbolic links
-    case dontFollow         = 0x02000000
+    case dontFollowSymlinks
     /**
         By default, when watching events on the children of a directory, events
         are generated for children even after they have been unlinked fromt he
@@ -72,20 +74,75 @@ public enum FileSystemEvent: FileSystemEventType {
         behavior, so that events are not generated for children after they have
         been unlinked from the watched directory
     */
-    case excludeUnlink      = 0x04000000
+    case excludeUnlink
 
     /**
         If a watch already eists for the path, combine the watch events instead
         of replacing them
     */
-    case maskAdd            = 0x20000000
+    case maskAdd
 
     /// The subject of the event is a directory
-    case isDir              = 0x40000000
+    case isDirectory
     /// Monitor for only one event and then remove it from the watch list
-    case oneShot            = 0x80000000
+    case oneShot
 
     /// A culmination of all the possible events that can occur
-    case allEvents          = 0x00000FFF
+    case allEvents
+
+    public var rawValue: FileSystemEventType {
+        let value: RawFileSystemEventType
+        switch self {
+        case .access:
+            value = IN_ACCESS
+        case .modify:
+            value = IN_MODIFY
+        case .attribute:
+            value = IN_ATTRIB
+        case .closeWrite:
+            value = IN_CLOSE_WRITE
+        case .closeNoWrite:
+            value = IN_CLOSE_NOWRITE
+        case .close:
+            value = IN_CLOSE
+        case .open:
+            value = IN_OPEN
+        case .movedFrom:
+            value = IN_MOVED_FROM
+        case .movedTo:
+            value = IN_MOVED_TO
+        case .moved:
+            value = IN_MOVE
+        case .create:
+            value = IN_CREATE
+        case .delete:
+            value = IN_DELETE
+        case .deleteSelf:
+            value = IN_DELETE_SELF
+        case .moveSelf:
+            value = IN_MOVE_SELF
+        case .unmount:
+            value = IN_UNMOUNT
+        case .queueOverflow:
+            value = IN_Q_OVERFLOW
+        case .ignored:
+            value = IN_IGNORED
+        case .onlyDirectory:
+            value = IN_ONLYDIR
+        case .dontFollowSymlinks:
+            value = IN_DONT_FOLLOW
+        case .excludeUnlink:
+            value = IN_EXCL_UNLINK
+        case .maskAdd:
+            value = IN_MASK_ADD
+        case .isDirectory:
+            value = IN_ISDIR
+        case .oneShot:
+            value = RawFileSystemEventType(bitPattern: IN_ONESHOT)
+        default:
+            value = IN_ACCESS | IN_ATTRIB | IN_CLOSE | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE | IN_OPEN
+        }
+        return FileSystemEventType(value)
+    }
 }
 
