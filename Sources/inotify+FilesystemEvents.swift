@@ -1,5 +1,10 @@
 import Cinotify
 
+/// The raw type that inotify events use
+public typealias RawFileSystemEventType = Int32
+/// The type used for file system events (based off inotify)
+public typealias FileSystemEventType = UInt32
+
 /// An enum with all the possible events for which inotify can watch
 public enum FileSystemEvent {
     /// The file was accessed (e.g. read(2), execve(2))

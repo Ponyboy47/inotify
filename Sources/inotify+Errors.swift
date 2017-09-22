@@ -86,10 +86,17 @@ public enum InotifyError: Error {
         case badSetSizeLimit_OR_InvalidTimeout
         /// Unable to allocate memory for internal tables
         case noMemory
+        /// The select timeout ocurred before an event was triggered
+        case timeout
         /**
             Did not receive a valid filde descriptor and we were unable
             to identify why using the errno
         */
         case unknownSelectFailure
+    }
+
+    public enum EventError: Error {
+        /// Unable to find a watcher in the array of watchers with a matching watch descriptor
+        case noWatcherWithDescriptor(WatchDescriptor)
     }
 }
