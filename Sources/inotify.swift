@@ -35,11 +35,17 @@ public class Inotify {
         fileprivate let mask: FileSystemEventType
         /// The callback to use when an event gets triggered
         fileprivate let callback: (InotifyEvent) -> ()
+        /**
+            Whether or not the event is a oneShot event and should be removed
+            from the watcher array after being used once
+        */
+        fileprivate let oneShot: Bool
 
-        public init(_ descriptor: WatchDescriptor, _ path: FilePath, _ mask: FileSystemEventType, _ callback: @escaping (InotifyEvent) -> ()) {
+        public init(_ descriptor: WatchDescriptor, _ path: FilePath, _ mask: FileSystemEventType, _ oneShot: Bool = false, _ callback: @escaping (InotifyEvent) -> ()) {
             self.descriptor = descriptor
             self.path = path
             self.mask = mask
+            self.oneShot = oneShot
             self.callback = callback
         }
     }
@@ -321,12 +327,12 @@ public class Inotify {
             throw InotifyError.WatchError.noEvents
         }
 
-        var flags: FileSystemEventType = 0
-        for event in events {
-            flags |= event.rawValue
+        var mask: FileSystemEventType = 0
+        for event in Set(events) {
+            mask |= event.rawValue
         }
 
-        let watchDescriptor = inotify_add_watch(self.fileDescriptor, path, flags)
+        let watchDescriptor = inotify_add_watch(self.fileDescriptor, path, mask)
 
         guard watchDescriptor >= 0 else {
             if let error = lastError() {
@@ -338,7 +344,7 @@ public class Inotify {
                 case .EFAULT:
                     throw InotifyError.WatchError.pathNotAccessible(path)
                 case .EINVAL:
-                    throw InotifyError.WatchError.invalidMask_OR_FileDescriptor(flags, self.fileDescriptor)
+                    throw InotifyError.WatchError.invalidMask_OR_FileDescriptor(mask, self.fileDescriptor)
                 case .ENAMETOOLONG:
                     throw InotifyError.WatchError.pathTooLong(path)
                 case .ENOENT:
@@ -348,12 +354,27 @@ public class Inotify {
                 case .ENOSPC:
                     throw InotifyError.WatchError.limitReached(path)
                 default:
-                    throw InotifyError.WatchError.unknownWatchFailure(path, flags)
+                    throw InotifyError.WatchError.unknownWatchFailure(path, mask)
                 }
             }
-            throw InotifyError.WatchError.unknownWatchFailure(path, flags)
+            throw InotifyError.WatchError.unknownWatchFailure(path, mask)
         }
-        watchers.append(Watcher(watchDescriptor, path, flags, callback))
+
+        if !events.contains(.maskAdd), let watcherIndex = watchers.index(where: { (watcher) in
+            return watcher.descriptor == watchDescriptor
+        }) {
+            watchers.remove(at: watcherIndex)
+        }
+
+        let unmasked = Set(events).intersection(FileSystemEvent.masked)
+        if Set(events) != unmasked {
+            mask = 0
+            for event in unmasked {
+                mask |= event.rawValue
+            }
+        }
+
+        watchers.append(Watcher(watchDescriptor, path, mask, events.contains(.oneShot), callback))
     }
 
     /**
@@ -519,14 +540,19 @@ public class Inotify {
                 }
 
                 let event = InotifyEvent(from: buffer)
-                guard let watcher = self.watchers.first(where: { (watcher) in
-                    return watcher.descriptor == event.wd
+                guard let watcherIndex = self.watchers.index(where: { (watcher) in
+                    return watcher.descriptor == event.wd && watcher.mask == event.mask
                 }) else {
                     throw InotifyError.EventError.noWatcherWithDescriptor(event.wd)
                 }
 
+                let watcher = self.watchers[watcherIndex]
+
                 queue.async {
                     watcher.callback(event)
+                }
+                if watcher.oneShot {
+                    self.watchers.remove(at: watcherIndex)
                 }
 
                 let bytesUsed = InotifyEvent.minSize + Int(event.len)
@@ -545,7 +571,7 @@ public class Inotify {
         self.canMonitor = true
         let delay: Double
         if let d = delay_timeval {
-            delay = Double(d.tv_sec) + (Double(d.tv_usec) / 100000.00)
+            delay = Double(d.tv_sec) + (Double(d.tv_usec) / 1000000.00)
         } else {
             delay = 2.0
         }

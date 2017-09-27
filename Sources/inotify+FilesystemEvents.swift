@@ -7,6 +7,9 @@ public typealias FileSystemEventType = UInt32
 
 /// An enum with all the possible events for which inotify can watch
 public enum FileSystemEvent {
+    /// A set of the events that may be included in the inotify_event struct's mask
+    static var masked: Set<FileSystemEvent> = Set([.access, .modify, .attribute, .closeWrite, .closeNoWrite, .closed, .open, .movedFrom, .movedTo, .moved, .create, .delete, .deleteSelf, .moveSelf])
+
     /// The file was accessed (e.g. read(2), execve(2))
     case access
     /// The file was modified (e.g. write(2), truncate(2))
@@ -26,7 +29,7 @@ public enum FileSystemEvent {
     /// The file or directory not opened for writing was closed
     case closeNoWrite
     /// A file or directory was closed (either for writing or not for writing)
-    case close
+    case closed
 
     /// A file or directory was opened
     case open
@@ -108,7 +111,7 @@ public enum FileSystemEvent {
             value = IN_CLOSE_WRITE
         case .closeNoWrite:
             value = IN_CLOSE_NOWRITE
-        case .close:
+        case .closed:
             value = IN_CLOSE
         case .open:
             value = IN_OPEN
@@ -143,7 +146,7 @@ public enum FileSystemEvent {
         case .isDirectory:
             value = IN_ISDIR
         case .oneShot:
-            value = RawFileSystemEventType(bitPattern: IN_ONESHOT)
+            return IN_ONESHOT
         default:
             value = IN_ACCESS | IN_ATTRIB | IN_CLOSE | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE | IN_OPEN
         }

@@ -1,27 +1,34 @@
 import XCTest
 import Dispatch
 import Glibc
+import ErrNo
 @testable import inotify
 
 class inotifyTests: XCTestCase {
+    let testQueue = DispatchQueue(label: "inotify.test.queue", qos: .utility)
+    let testTimeout: timeval = timeval(tv_sec: 0, tv_usec: 500000)
+    let testDirectory = FilePath(#file).components(separatedBy: "/").dropLast().joined(separator: "/")
 
     func testInit() {
         XCTAssertNoThrow(try Inotify())
     }
 
+    // This only tests that we can init with a qos. We do not have any way to
+    // check the qos on linux yet
     func testInitQoS() {
         XCTAssertNoThrow(try Inotify(qos: .utility))
     }
 
     /*
-        qos_class_self() is not ported to swift on linux yet, so this test fails to compile
+        qos_class_self() is not ported to swift on linux yet, so this test
+            fails to compile
     */
     // func testQoS() {
     //     guard let inotify = try? Inotify(qos: .utility) else {
     //         XCTFail()
     //     }
 
-    //     let expectation = self.expectation(description: "Expected after touch")
+    //     let expectation = self.expectation(description: "touch")
 
     //     inotify.watch(path: "/tmp", for: .allEvents, actionOnEvent: { event in
     //         XCTAssertEqual(qos_class_self(), DispatchQoS.utility.rawValue)
@@ -62,87 +69,145 @@ class inotifyTests: XCTestCase {
 
     func testEventCallback() {
         guard let inotify = try? Inotify() else {
-            XCTFail()
+            XCTFail("Failed to initializy inotify")
             return
         }
 
-        let expectation = self.expectation(description: "Expected after touch")
+        let expt_create1 = self.expectation(description: "create1")
 
-        let filename: FilePath = "/tmp/inotify_test_event.\(Foundation.UUID().description)"
-        try? inotify.watch(path: "/tmp", for: .create, actionOnEvent: { event in
-            expectation.fulfill()
-            remove(filename)
-        })
+        let directory = testDirectory + "/testEventCallback"
+        createDirectory(directory)
+
+        do {
+            try inotify.watch(path: directory, for: [.create, .oneShot], actionOnEvent: { event in
+                expt_create1.fulfill()
+                remove("\(directory)/\(event.name!)")
+            })
+        } catch {
+            XCTFail("Failed to add watcher: \(error)")
+            return
+        }
 
         inotify.start()
 
-        let fd: FileDescriptor = open(filename, O_CREAT | O_WRONLY | O_TRUNC, S_IWUSR | S_IRUSR)
-        guard fd >= 0 else {
-            XCTFail("Failed to open the file")
-            return
-        }
-        let writtenBytes = write(fd, UnsafeMutablePointer<CChar>.allocate(capacity: 1), 1)
-        guard writtenBytes > 0 else {
-            XCTFail("Didn't write any bytes to the file")
-            return
-        }
-        let closed = close(fd)
-        guard closed == 0 else {
-            XCTFail("Failed to close the file")
-            return
-        }
+        inotify.stop()
+        self.createFile(directory)
 
         waitForExpectations(timeout: 0.5, handler: nil)
     }
 
     func testMultiEventCallbacks() {
         guard let inotify = try? Inotify() else {
-            XCTFail()
+            XCTFail("Failed to initializy inotify")
             return
         }
 
-        let expectation = self.expectation(description: "Expected after touch")
+        let expt_create2 = self.expectation(description: "create2")
+        let expt_delete1 = self.expectation(description: "delete1")
 
-        // The following attributes are not available on Linux and so the test
-        //  fails because there's no way to make sure that the expectation was
-        //  fulfilled exactly 3 times.
-        // expectation.expectedFulfillmentCount = 3
-        // expectation.assertForOverfill = true
+        let directory = testDirectory + "/testMultiEventCallbacks"
+        createDirectory(directory)
 
-        try? inotify.watch(path: "/tmp", for: .create, actionOnEvent: { event in
-            expectation.fulfill()
-            remove("/tmp/\(event.name!)")
-        })
+        do {
+            try inotify.watch(path: directory, for: .create, actionOnEvent: { event in
+                expt_create2.fulfill()
+                inotify.stop()
+            })
+        } catch {
+            XCTFail("Failed to add create watcher: \(error)")
+            return
+        }
+
+        do {
+            // We need to include the maskAdd event since we are watching the
+            // same directory. If we don't include the maskAdd event mask then
+            // the create event watch is replaced with this one
+            try inotify.watch(path: directory, for: [.delete, .maskAdd], actionOnEvent: { _ in
+                expt_delete1.fulfill()
+            })
+        } catch {
+            XCTFail("Failed to add delete watcher: \(error)")
+        }
 
         inotify.start()
 
-        DispatchQueue.global(qos: .utility).async {
-            createFile()
-            createFile()
-            createFile()
+        remove(self.createFile(directory)!)
+
+        waitForExpectations(timeout: 5, handler: nil)
+    }
+
+    func testOverwriteEventCallback() {
+        guard let inotify = try? Inotify() else {
+            XCTFail("Failed to initializy inotify")
+            return
         }
 
-        func createFile() {
-            let filename: FilePath = "/tmp/inotify_test_event.\(Foundation.UUID().description)"
+        let expt_delete2 = self.expectation(description: "delete2")
 
-            let fd: FileDescriptor = open(filename, O_CREAT | O_WRONLY | O_TRUNC, S_IWUSR | S_IRUSR)
-            guard fd >= 0 else {
-                XCTFail("Failed to open the file")
-                return
-            }
-            let writtenBytes = write(fd, UnsafeMutablePointer<CChar>.allocate(capacity: 1), 1)
-            guard writtenBytes > 0 else {
-                XCTFail("Didn't write any bytes to the file")
-                return
-            }
-            let closed = close(fd)
-            guard closed == 0 else {
-                XCTFail("Failed to close the file")
+        let directory = testDirectory + "/testOverwriteEventCallback"
+        createDirectory(directory)
+
+        var createdEvent: Bool = false
+        do {
+            try inotify.watch(path: directory, for: .create, actionOnEvent: { event in
+                createdEvent = true
+            })
+        } catch {
+            XCTFail("Failed to add create watcher: \(error)")
+            return
+        }
+
+        do {
+            // We need to include the maskAdd event since we are watching the
+            // same directory. If we don't include the maskAdd event mask then
+            // the create event watch is replaced with this one
+            try inotify.watch(path: directory, for: .delete, actionOnEvent: { _ in
+                expt_delete2.fulfill()
+            })
+        } catch {
+            XCTFail("Failed to add delete watcher: \(error)")
+        }
+
+        inotify.start()
+
+        remove(self.createFile(directory)!)
+
+        inotify.stop()
+
+        waitForExpectations(timeout: 1, handler: nil)
+        XCTAssertFalse(createdEvent)
+    }
+
+    func createDirectory(_ dir: FilePath) {
+        if access(dir, F_OK) != 0 {
+            guard mkdir(dir, S_IRWXU | S_IRWXG | S_IRWXO) >= 0 else {
+                XCTFail("Failed to create the directory '\(dir)' with error: \(lastError())")
                 return
             }
         }
+    }
 
-        waitForExpectations(timeout: 0.5, handler: nil)
+    @discardableResult
+    func createFile(_ dir: FilePath = "/tmp") -> FilePath? {
+        let filename: FilePath = "\(dir)/inotify_test_event.\(Foundation.UUID().description)"
+
+        let fd: FileDescriptor = open(filename, O_CREAT | O_WRONLY | O_TRUNC, S_IWUSR | S_IRUSR)
+        guard fd >= 0 else {
+            XCTFail("Failed to open the file: \(lastError())")
+            return nil
+        }
+        let writtenBytes = write(fd, UnsafeMutablePointer<CChar>.allocate(capacity: 1), 1)
+        guard writtenBytes > 0 else {
+            XCTFail("Didn't write any bytes to the file")
+            return nil
+        }
+        let closed = close(fd)
+        guard closed == 0 else {
+            XCTFail("Failed to close the file")
+            return nil
+        }
+
+        return filename
     }
 
     static var allTests = [
@@ -154,7 +219,7 @@ class inotifyTests: XCTestCase {
         ("testInitFlags4", testInitFlags4),
         ("testWatchAllEvents", testWatchAllEvents),
         ("testEventCallback", testEventCallback),
-        // Can't run the following test until Linux gets the rest of the XCTestExpectation attributes
-//        ("testMultiEventCallbacks", testMultiEventCallbacks),
+        ("testMultiEventCallbacks", testMultiEventCallbacks),
+        ("testOverwriteEventCallback", testOverwriteEventCallback),
     ]
 }
