@@ -6,7 +6,7 @@ public typealias RawFileSystemEventType = Int32
 public typealias FileSystemEventType = UInt32
 
 /// An enum with all the possible events for which inotify can watch
-public enum FileSystemEvent {
+public enum FileSystemEvent: Hashable {
     /// A set of the events that may be included in the inotify_event struct's mask
     static var masked: Set<FileSystemEvent> = Set([.access, .modify, .attribute, .closeWrite, .closeNoWrite, .closed, .open, .movedFrom, .movedTo, .moved, .create, .delete, .deleteSelf, .moveSelf])
 
@@ -98,13 +98,20 @@ public enum FileSystemEvent {
     /// A culmination of all the possible events that can occur
     case allEvents
 
-    public init?(rawValue: FileSystemEventType) {
+    /// Used when the mask raw value didn't correspond to any of the listed events
+    case other(FileSystemEventType)
+
+    public var hashValue: Int {
+        return self.rawValue.hashValue
+    }
+
+    public init(rawValue: FileSystemEventType) {
         if let mask = FileSystemEvent.masked.first(where: { mask in
             return mask.rawValue == rawValue
         }) {
             self = mask
         } else {
-            return nil
+            self = .other(rawValue)
         }
     }
 
@@ -157,10 +164,16 @@ public enum FileSystemEvent {
             value = IN_ISDIR
         case .oneShot:
             return IN_ONESHOT
+        case .other(let raw):
+            return raw
         default:
             value = IN_ACCESS | IN_ATTRIB | IN_CLOSE | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE | IN_OPEN
         }
         return FileSystemEventType(value)
     }
+}
+
+public func ==(lhs: FileSystemEvent, rhs: FileSystemEvent) -> Bool {
+    return lhs.rawValue == rhs.rawValue
 }
 

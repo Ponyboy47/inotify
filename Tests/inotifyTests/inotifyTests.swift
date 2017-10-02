@@ -190,7 +190,8 @@ class inotifyTests: XCTestCase {
 
         do {
             try inotify.watch(path: directory, for: .create) { event in
-                if let _ = FileSystemEvent(rawValue: event.mask) {
+                let mask = FileSystemEvent(rawValue: event.mask)
+                if mask == .create {
                     expt_eventMask.fulfill()
                 }
             }
