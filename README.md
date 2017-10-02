@@ -21,7 +21,7 @@ do {
 
     try inotify.watch(path: "/tmp", for: .allEvents, actionOnEvent: { event in
         let mask = FileSystemEvent(rawValue: event.mask)!
-            print("A(n) \(mask) event was triggered!")
+        print("A(n) \(mask) event was triggered!")
     }
 
     inotify.start()
