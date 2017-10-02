@@ -19,6 +19,7 @@ Add this to your Package.swift:
 .Package(url: "https://github.com/Ponyboy47/inotify.git", majorVersion: 0, minor: 1)
 ```
 
+Use it like this:
 ```swift
 import Inotify
 
