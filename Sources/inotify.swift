@@ -151,7 +151,7 @@ public class Inotify {
                 case .ENFILE:
                     throw InotifyError.InitError.systemLimitReached
                 case .ENOMEM:
-                    throw InotifyError.noKernelMemory
+                    throw InotifyError.InitError.noKernelMemory
                 default:
                     throw InotifyError.InitError.unknownInitFailure
                 }
@@ -340,7 +340,7 @@ public class Inotify {
                 case .EACCES:
                     throw InotifyError.WatchError.noReadAccess(path)
                 case .EBADF:
-                    throw InotifyError.badFileDescriptor(self.fileDescriptor)
+                    throw InotifyError.WatchError.badFileDescriptor(self.fileDescriptor)
                 case .EFAULT:
                     throw InotifyError.WatchError.pathNotAccessible(path)
                 case .EINVAL:
@@ -430,7 +430,7 @@ public class Inotify {
             if let error = lastError() {
                 switch error {
                 case .EBADF:
-                    throw InotifyError.badFileDescriptor(self.fileDescriptor)
+                    throw InotifyError.UnwatchError.badFileDescriptor(self.fileDescriptor)
                 case .EINVAL:
                     throw InotifyError.UnwatchError.invalidWatch_OR_FileDescriptor(watcher.descriptor, self.fileDescriptor)
                 default:

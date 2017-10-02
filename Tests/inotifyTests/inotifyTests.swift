@@ -75,8 +75,7 @@ class inotifyTests: XCTestCase {
 
         let expt_create1 = self.expectation(description: "create1")
 
-        let directory = testDirectory + "/testEventCallback"
-        createDirectory(directory)
+        let directory = createDirectoryForTest()
 
         do {
             try inotify.watch(path: directory, for: [.create, .oneShot], actionOnEvent: { event in
@@ -91,9 +90,10 @@ class inotifyTests: XCTestCase {
         inotify.start()
 
         inotify.stop()
-        self.createFile(directory)
+        self.createTestFile()
 
         waitForExpectations(timeout: 0.5, handler: nil)
+        cleanupDirectoryForTest()
     }
 
     func testMultiEventCallbacks() {
@@ -105,8 +105,7 @@ class inotifyTests: XCTestCase {
         let expt_create2 = self.expectation(description: "create2")
         let expt_delete1 = self.expectation(description: "delete1")
 
-        let directory = testDirectory + "/testMultiEventCallbacks"
-        createDirectory(directory)
+        let directory = createDirectoryForTest()
 
         do {
             try inotify.watch(path: directory, for: .create, actionOnEvent: { event in
@@ -131,9 +130,10 @@ class inotifyTests: XCTestCase {
 
         inotify.start()
 
-        remove(self.createFile(directory)!)
+        remove(self.createTestFile()!)
 
         waitForExpectations(timeout: 5, handler: nil)
+        cleanupDirectoryForTest()
     }
 
     func testOverwriteEventCallback() {
@@ -144,8 +144,7 @@ class inotifyTests: XCTestCase {
 
         let expt_delete2 = self.expectation(description: "delete2")
 
-        let directory = testDirectory + "/testOverwriteEventCallback"
-        createDirectory(directory)
+        let directory = createDirectoryForTest()
 
         var createdEvent: Bool = false
         do {
@@ -170,25 +169,83 @@ class inotifyTests: XCTestCase {
 
         inotify.start()
 
-        remove(self.createFile(directory)!)
+        remove(self.createTestFile()!)
 
         inotify.stop()
 
         waitForExpectations(timeout: 1, handler: nil)
         XCTAssertFalse(createdEvent)
+        cleanupDirectoryForTest()
     }
 
-    func createDirectory(_ dir: FilePath) {
+    func testGetEventMask() {
+        guard let inotify = try? Inotify() else {
+            XCTFail("Failed to initializy inotify")
+            return
+        }
+
+        let expt_eventMask = self.expectation(description: "getEventMask")
+
+        let directory = createDirectoryForTest()
+
+        do {
+            try inotify.watch(path: directory, for: .create) { event in
+                if let _ = FileSystemEvent(rawValue: event.mask) {
+                    expt_eventMask.fulfill()
+                }
+            }
+        } catch {
+            XCTFail("Failed to add create watcher: \(error)")
+            return
+        }
+
+        inotify.start()
+
+        self.createTestFile()
+
+        inotify.stop()
+
+        waitForExpectations(timeout: 1, handler: nil)
+        cleanupDirectoryForTest()
+    }
+
+    func createDirectoryForTest(_ path: FilePath = #function) -> FilePath {
+        let dir: FilePath = "\(testDirectory)/\(path)"
         if access(dir, F_OK) != 0 {
             guard mkdir(dir, S_IRWXU | S_IRWXG | S_IRWXO) >= 0 else {
                 XCTFail("Failed to create the directory '\(dir)' with error: \(lastError())")
+                // The chances of this path already existing are like 0
+                return "\(Foundation.UUID().description)/\(Foundation.UUID().description)"
+            }
+        }
+        return dir
+    }
+
+    func cleanupDirectoryForTest(_ path: FilePath = #function) {
+        let dir: FilePath = "\(testDirectory)/\(path)"
+        if access(dir, F_OK) == 0 {
+            guard ftw(dir, { (path, sb, typeflag) in
+                    guard typeflag != Int32(FTW_D) else {
+                        return 0
+                    }
+                    guard let p = path, !String(cString: p).isEmpty else {
+                        return -1
+                    }
+                    return remove(String(cString: p))
+                } , 5) >= 0 else {
+                print("Failed to delete directories under: \(dir)")
+                return
+            }
+            guard remove(dir) >= 0 else {
+                print("Failed to delete: \(dir)")
                 return
             }
         }
     }
 
     @discardableResult
-    func createFile(_ dir: FilePath = "/tmp") -> FilePath? {
+    func createTestFile(_ path: FilePath = #function) -> FilePath? {
+        let dir: FilePath = "\(testDirectory)/\(path)"
         let filename: FilePath = "\(dir)/inotify_test_event.\(Foundation.UUID().description)"
 
         let fd: FileDescriptor = open(filename, O_CREAT | O_WRONLY | O_TRUNC, S_IWUSR | S_IRUSR)
@@ -221,5 +278,6 @@ class inotifyTests: XCTestCase {
         ("testEventCallback", testEventCallback),
         ("testMultiEventCallbacks", testMultiEventCallbacks),
         ("testOverwriteEventCallback", testOverwriteEventCallback),
+        ("testGetEventMask", testGetEventMask),
     ]
 }

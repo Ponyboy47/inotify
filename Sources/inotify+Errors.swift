@@ -1,12 +1,5 @@
 /// Error enum for Inotify
 public enum InotifyError: Error {
-    /// Insufficient kernel memory was available (ENOMEM errno)
-    case noKernelMemory
-    /// The given inotify file descriptor is not valid (EBADF errno)
-    case badFileDescriptor(FileDescriptor)
-    /// There was not enough available memory to allocate a buffer to read inotify events (ENOMEM errno)
-    case noMemoryForBuffer
-
     /// Errors specific to initialization
     public enum InitError: Error {
         /// An invalid flag value was specified in flags (EINVAL errno)
@@ -19,6 +12,8 @@ public enum InotifyError: Error {
         case localLimitReached
         /// The system-wide limit on the total number of open files has been reached (ENFILE errno)
         case systemLimitReached
+        /// Insufficient kernel memory was available (ENOMEM errno)
+        case noKernelMemory
         /**
             Did not receive a valid inotify file descriptor and we were unable
             to identify why using the errno
@@ -30,6 +25,8 @@ public enum InotifyError: Error {
     public enum WatchError: Error {
         /// Read access to the fiven file is not permitted (EACCES errno)
         case noReadAccess(FilePath)
+        /// The given inotify file descriptor is not valid (EBADF errno)
+        case badFileDescriptor(FileDescriptor)
         /// The path points outside of the process's accessible address space (EFAULT errno)
         case pathNotAccessible(FilePath)
         /**
@@ -58,6 +55,8 @@ public enum InotifyError: Error {
     }
 
     public enum UnwatchError: Error {
+        /// The given inotify file descriptor is not valid (EBADF errno)
+        case badFileDescriptor(FileDescriptor)
         /**
             The given watch descriptor is not valid; or the file descriptor is not an inotify file 
             descriptor (EINVAL errno)

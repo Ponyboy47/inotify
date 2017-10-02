@@ -98,6 +98,16 @@ public enum FileSystemEvent {
     /// A culmination of all the possible events that can occur
     case allEvents
 
+    public init?(rawValue: FileSystemEventType) {
+        if let mask = FileSystemEvent.masked.first(where: { mask in
+            return mask.rawValue == rawValue
+        }) {
+            self = mask
+        } else {
+            return nil
+        }
+    }
+
     public var rawValue: FileSystemEventType {
         let value: RawFileSystemEventType
         switch self {
