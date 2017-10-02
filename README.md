@@ -14,7 +14,7 @@ A swifty wrapper around Linux's inotify API. Trying to make using inotify in Swi
 
 ## Usage
 ```swift
-import inotify
+import Inotify
 
 do {
     let inotify = try Inotify()
