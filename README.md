@@ -29,8 +29,6 @@ do {
     print("Error initializing the inotify object: \(error)")
 } catch InotifyError.WatchError {
     print("Error adding watcher to the inotify object: \(error)")
-} catch InotifyError.SelectError {
-    print("Error waiting for events to be triggered: \(error)")
 }
 ```
 
