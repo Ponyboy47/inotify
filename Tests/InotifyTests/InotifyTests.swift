@@ -2,9 +2,9 @@ import XCTest
 import Dispatch
 import Glibc
 import ErrNo
-@testable import inotify
+@testable import Inotify
 
-class inotifyTests: XCTestCase {
+class InotifyTests: XCTestCase {
     let testQueue = DispatchQueue(label: "inotify.test.queue", qos: .utility)
     let testTimeout: timeval = timeval(tv_sec: 0, tv_usec: 500000)
     let testDirectory = FilePath(#file).components(separatedBy: "/").dropLast().joined(separator: "/")

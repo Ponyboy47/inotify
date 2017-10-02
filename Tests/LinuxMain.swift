@@ -1,6 +1,6 @@
 import XCTest
-@testable import inotifyTests
+@testable import InotifyTests
 
 XCTMain([
-    testCase(inotifyTests.allTests),
+    testCase(InotifyTests.allTests),
 ])
