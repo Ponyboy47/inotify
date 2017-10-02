@@ -13,6 +13,12 @@ A swifty wrapper around Linux's inotify API. Trying to make using inotify in Swi
 - Handy error handling using the errno to give more descriptive errors when something goes wrong
 
 ## Usage
+
+Add this to your Package.swift:
+```swift
+.Package(url: "https://github.com/Ponyboy47/inotify.git", majorVersion: 0, minor: 1)
+```
+
 ```swift
 import Inotify
 
@@ -22,6 +28,11 @@ do {
     try inotify.watch(path: "/tmp", for: .allEvents) { event in
         let mask = FileSystemEvent(rawValue: event.mask)
         print("A(n) \(mask) event was triggered!")
+        if let name = event.name {
+            // This should only be present when the event was triggered on a
+            // file in the watched directory, and not on the directory itself.
+            print("The filename for the event is '\(name)'.")
+        }
     }
 
     inotify.start()
