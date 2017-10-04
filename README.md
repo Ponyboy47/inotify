@@ -20,6 +20,8 @@ Add this to your Package.swift:
 .Package(url: "https://github.com/Ponyboy47/inotify.git", majorVersion: 0, minor: 1)
 ```
 
+NOTE: The current version of Inotify (0.1.1) uses Swift 3.1.1
+
 Use it like this:
 ```swift
 import Inotify
@@ -59,3 +61,4 @@ When using the select-based monitoring, calling `inotify.stop()` will not stop t
 - [x] Asynchronous monitoring
 - [ ] Synchronous monitoring
 - [ ] Better error propogation in the asynchronous monitors
+- [ ] Update to Swift 4
