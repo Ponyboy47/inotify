@@ -62,3 +62,7 @@ When using the select-based monitoring, calling `inotify.stop()` will not stop t
 - [ ] Synchronous monitoring
 - [ ] Better error propogation in the asynchronous monitors
 - [ ] Update to Swift 4
+- [ ] Add more watchers
+  - [ ] poll
+  - [ ] epoll
+  - [ ] pselect
