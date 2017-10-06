@@ -66,3 +66,4 @@ When using the select-based monitoring, calling `inotify.stop()` will not stop t
   - [ ] poll
   - [ ] epoll
   - [ ] pselect
+- [ ] Make watchers more modular (so that others could easily write their own custom ones)
