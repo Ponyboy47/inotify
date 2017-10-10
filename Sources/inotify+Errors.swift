@@ -74,5 +74,7 @@ public enum InotifyError: Error {
     public enum EventError: Error {
         /// Unable to find a watcher in the array of watchers with a matching watch descriptor
         case noWatcherWithDescriptor(WatchDescriptor)
+        /// There were a number of bytes leftover that did not meet the inotify_event struct's min size
+        case leftoverBytes(Int)
     }
 }

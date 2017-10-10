@@ -9,7 +9,7 @@ public class SelectEventWatcher: InotifyEventWatcher {
         self.timeout = timeout
     }
 
-    public func watch() throws -> [InotifyEvent] {
+    public func wait() throws {
         guard let fd = fileDescriptor else {
             throw SelectError.noFileDescriptor
         }
@@ -32,8 +32,6 @@ public class SelectEventWatcher: InotifyEventWatcher {
         }
 
         guard count > 0 else {
-            self.stop()
-
             if count == 0 {
                 throw SelectError.timeout
             } else if let error = lastError() {
@@ -52,38 +50,6 @@ public class SelectEventWatcher: InotifyEventWatcher {
             }
             throw SelectError.unknownSelectFailure
         }
-
-
-        repeat {
-            if carryoverBytes > 0 {
-                buffer.assign(from: carryoverBuffer, count: carryoverBytes)
-                buffer = buffer.advanced(by: carryoverBytes)
-            }
-
-            let oldBytes = carryoverBytes
-            bytesRead = read(fd, buffer, InotifyEvent.maxSize)
-            carryoverBytes = oldBytes
-            buffer = buffer.advanced(by: -carryoverBytes)
-
-            guard bytesRead + carryoverBytes >= InotifyEvent.minSize else {
-                continue
-            }
-
-            let event = InotifyEvent(from: buffer)
-
-            events.append(event)
-
-            let bytesUsed = InotifyEvent.minSize + Int(event.len)
-            if bytesRead + carryoverBytes > bytesUsed {
-                carryoverBytes = bytesRead + carryoverBytes - bytesUsed
-                carryoverBuffer.assign(from: buffer.advanced(by: bytesUsed), count: carryoverBytes)
-                buffer = buffer.advanced(by: -bytesUsed)
-            }
-        } while (bytesRead > 0)
-        return events
-    }
-
-    public func stop() {
     }
 }
 

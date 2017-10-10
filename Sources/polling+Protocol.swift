@@ -3,7 +3,7 @@ public protocol InotifyEventWatcher: class {
     /// The inotify file descriptor where events will be read from
     var fileDescriptor: FileDescriptor? { get set }
     /// The function used to watch for inotify events
-    func watch() throws -> [InotifyEvent]
+    func wait() throws
 }
 
 /// A specialiced InotifyWatcher that can be stopped while actively watching for Inotify events

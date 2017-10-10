@@ -481,7 +481,12 @@ public class Inotify {
         self.pollQueue.async {
             do {
                 while self.shouldMonitor {
-                    let events: [InotifyEvent] = try self.eventWatcher.watch()
+
+                    // Waits until events have been triggered
+                    try self.eventWatcher.wait()
+
+                    let events: [InotifyEvent] = try self.getEvents()
+
                     for event in events {
                         guard let watcherIndex = self.watchers.index(where: { (watcher) in
                             return watcher.descriptor == event.wd && watcher.mask == event.mask
@@ -505,6 +510,47 @@ public class Inotify {
                 print("An error occurred while waiting for inotify events: \(error)")
             }
         }
+    }
+
+    private func getEvents() throws -> [InotifyEvent] {
+        let carryoverBuffer: UnsafeMutablePointer<CChar> = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
+        var carryoverBytes: Int = 0
+        var bytesRead: Int = 0
+        var buffer: UnsafeMutablePointer<CChar> = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
+
+        var events: [InotifyEvent] = []
+
+        repeat {
+            if carryoverBytes > 0 {
+                buffer.assign(from: carryoverBuffer, count: carryoverBytes)
+                buffer = buffer.advanced(by: carryoverBytes)
+            }
+
+            let oldBytes = carryoverBytes
+            bytesRead = read(self.fileDescriptor, buffer, InotifyEvent.maxSize)
+            carryoverBytes = oldBytes
+            buffer = buffer.advanced(by: -carryoverBytes)
+
+            guard bytesRead + carryoverBytes >= InotifyEvent.minSize else {
+                if carryoverBytes > 0 && bytesRead == 0 {
+                    throw InotifyError.EventError.leftoverBytes(carryoverBytes)
+                }
+                continue
+            }
+
+            let event = InotifyEvent(from: buffer)
+
+            events.append(event)
+
+            let bytesUsed = InotifyEvent.minSize + Int(event.len)
+            if bytesRead + carryoverBytes > bytesUsed {
+                carryoverBytes = bytesRead + carryoverBytes - bytesUsed
+                carryoverBuffer.assign(from: buffer.advanced(by: bytesUsed), count: carryoverBytes)
+                buffer = buffer.advanced(by: -bytesUsed)
+            }
+        } while (bytesRead > 0)
+
+        return events
     }
 
     private func manualMonitor(actionQueue queue: DispatchQueue, readDelay delay_timeval: timeval? = nil) throws {
