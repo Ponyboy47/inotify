@@ -22,8 +22,6 @@ public class SelectEventWatcher: InotifyEventWatcher {
         fd_zero(&fileDescriptorSet)
         fd_setter(fd, &fileDescriptorSet)
 
-        var events: [InotifyEvent] = []
-
         let count: Int32
         if var t = timeout {
             count = select(FD_SETSIZE, &fileDescriptorSet, nil, nil, &t)
@@ -36,13 +34,13 @@ public class SelectEventWatcher: InotifyEventWatcher {
                 throw SelectError.timeout
             } else if let error = lastError() {
                 switch error {
-                case .EBADF:
+                case EBADF:
                     throw SelectError.invalidFileDescriptor
-                case .EINTR:
+                case EINTR:
                     throw SelectError.caughtSignal
-                case .EINVAL:
+                case EINVAL:
                     throw SelectError.badSetSizeLimit_OR_InvalidTimeout
-                case .ENOMEM:
+                case ENOMEM:
                     throw SelectError.noMemory
                 default:
                     throw SelectError.unknownSelectFailure

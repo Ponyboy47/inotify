@@ -71,6 +71,17 @@ public enum InotifyError: Error {
         case unknownUnwatchFailure(FilePath)
     }
 
+    public enum ReadError: Error {
+        case nonBlockingDescriptorWouldBeBlocked
+        case badFileDescriptor(FileDescriptor)
+        case bufferOutsideAccessibleAddressSpace
+        case signalInterupt
+        case unsuitableDescriptorForReading(FileDescriptor)
+        case IOError
+        case descriptorIsDirectory(FileDescriptor)
+        case unknownReadError
+    }
+
     public enum EventError: Error {
         /// Unable to find a watcher in the array of watchers with a matching watch descriptor
         case noWatcherWithDescriptor(WatchDescriptor)

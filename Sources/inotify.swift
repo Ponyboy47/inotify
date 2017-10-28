@@ -153,13 +153,13 @@ public class Inotify {
         guard fileDescriptor >= 0 else {
             if let error = lastError() {
                 switch error {
-                case .EINVAL:
+                case EINVAL:
                     throw InotifyError.InitError.invalidInitFlag(initFlags)
-                case .EMFILE:
+                case EMFILE:
                     throw InotifyError.InitError.localLimitReached
-                case .ENFILE:
+                case ENFILE:
                     throw InotifyError.InitError.systemLimitReached
-                case .ENOMEM:
+                case ENOMEM:
                     throw InotifyError.InitError.noKernelMemory
                 default:
                     throw InotifyError.InitError.unknownInitFailure
@@ -357,21 +357,21 @@ public class Inotify {
         guard watchDescriptor >= 0 else {
             if let error = lastError() {
                 switch error {
-                case .EACCES:
+                case EACCES:
                     throw InotifyError.WatchError.noReadAccess(path)
-                case .EBADF:
+                case EBADF:
                     throw InotifyError.WatchError.badFileDescriptor(self.fileDescriptor)
-                case .EFAULT:
+                case EFAULT:
                     throw InotifyError.WatchError.pathNotAccessible(path)
-                case .EINVAL:
+                case EINVAL:
                     throw InotifyError.WatchError.invalidMask_OR_FileDescriptor(mask, self.fileDescriptor)
-                case .ENAMETOOLONG:
+                case ENAMETOOLONG:
                     throw InotifyError.WatchError.pathTooLong(path)
-                case .ENOENT:
+                case ENOENT:
                     throw InotifyError.WatchError.invalidPath(path)
-                case .ENOMEM:
+                case ENOMEM:
                     throw InotifyError.WatchError.noKernelMemory(path)
-                case .ENOSPC:
+                case ENOSPC:
                     throw InotifyError.WatchError.limitReached(path)
                 default:
                     throw InotifyError.WatchError.unknownWatchFailure(path, mask)
@@ -449,9 +449,9 @@ public class Inotify {
         guard inotify_rm_watch(self.fileDescriptor, watcher.descriptor) == 0 else {
             if let error = lastError() {
                 switch error {
-                case .EBADF:
+                case EBADF:
                     throw InotifyError.UnwatchError.badFileDescriptor(self.fileDescriptor)
-                case .EINVAL:
+                case EINVAL:
                     throw InotifyError.UnwatchError.invalidWatch_OR_FileDescriptor(watcher.descriptor, self.fileDescriptor)
                 default:
                     throw InotifyError.UnwatchError.unknownUnwatchFailure(p)
@@ -482,7 +482,7 @@ public class Inotify {
             do {
                 while self.shouldMonitor {
 
-                    // Waits until events have been triggered
+                    // Blocks until events have been triggered
                     try self.eventWatcher.wait()
 
                     let events: [InotifyEvent] = try self.getEvents()
@@ -501,6 +501,7 @@ public class Inotify {
                         if watcher.oneShot {
                             self.watchers.remove(at: watcherIndex)
                             guard self.watchers.count > 0 else {
+                                self.stop()
                                 break
                             }
                         }
@@ -513,7 +514,7 @@ public class Inotify {
     }
 
     private func getEvents() throws -> [InotifyEvent] {
-        let carryoverBuffer: UnsafeMutablePointer<CChar> = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
+        var carryoverBuffer: UnsafeMutablePointer<CChar> = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
         var carryoverBytes: Int = 0
         var bytesRead: Int = 0
         var buffer: UnsafeMutablePointer<CChar> = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
@@ -521,7 +522,21 @@ public class Inotify {
         var events: [InotifyEvent] = []
 
         repeat {
-            if carryoverBytes > 0 {
+            if carryoverBytes >= InotifyEvent.minSize {
+                var e = InotifyEvent(from: carryoverBuffer)
+                if carryoverBytes >= e.size {
+                    carryoverBytes -= e.size
+                    carryoverBuffer = carryoverBuffer.advanced(by: e.size)
+                    events.append(e)
+                    if carryoverBytes > 0 && carryoverBytes >= InotifyEvent.minSize {
+                        continue
+                    } else if carryoverBytes == 0 {
+                        break
+                    }
+                }
+            }
+
+            if carryoverBytes > 0 && carryoverBytes < InotifyEvent.minSize {
                 buffer.assign(from: carryoverBuffer, count: carryoverBytes)
                 buffer = buffer.advanced(by: carryoverBytes)
             }
@@ -530,25 +545,50 @@ public class Inotify {
             bytesRead = read(self.fileDescriptor, buffer, InotifyEvent.maxSize)
             carryoverBytes = oldBytes
             buffer = buffer.advanced(by: -carryoverBytes)
+            guard bytesRead >= 0 else {
+                if let error = lastError() {
+                    switch error {
+                    case EAGAIN:
+                        throw InotifyError.ReadError.nonBlockingDescriptorWouldBeBlocked
+                    case EWOULDBLOCK: // This will generally be the same as EAGAIN, but could possibly change in the future
+                        throw InotifyError.ReadError.nonBlockingDescriptorWouldBeBlocked
+                    case EBADF:
+                        throw InotifyError.ReadError.badFileDescriptor(self.fileDescriptor)
+                    case EFAULT:
+                        throw InotifyError.ReadError.bufferOutsideAccessibleAddressSpace
+                    case EINTR:
+                        throw InotifyError.ReadError.signalInterupt
+                    case EINVAL:
+                        throw InotifyError.ReadError.unsuitableDescriptorForReading(self.fileDescriptor)
+                    case EIO:
+                        throw InotifyError.ReadError.IOError
+                    case EISDIR:
+                        throw InotifyError.ReadError.descriptorIsDirectory(self.fileDescriptor)
+                    default:
+                        throw InotifyError.ReadError.unknownReadError
+                    }
+                }
+                throw InotifyError.ReadError.unknownReadError
+            }
 
             guard bytesRead + carryoverBytes >= InotifyEvent.minSize else {
                 if carryoverBytes > 0 && bytesRead == 0 {
                     throw InotifyError.EventError.leftoverBytes(carryoverBytes)
+                } else if bytesRead == 0 && carryoverBytes == 0 {
+                    break
                 }
                 continue
             }
 
-            let event = InotifyEvent(from: buffer)
-
+            var event = InotifyEvent(from: buffer)
             events.append(event)
 
-            let bytesUsed = InotifyEvent.minSize + Int(event.len)
-            if bytesRead + carryoverBytes > bytesUsed {
-                carryoverBytes = bytesRead + carryoverBytes - bytesUsed
-                carryoverBuffer.assign(from: buffer.advanced(by: bytesUsed), count: carryoverBytes)
-                buffer = buffer.advanced(by: -bytesUsed)
+            if bytesRead + carryoverBytes > event.size {
+                carryoverBytes = bytesRead + carryoverBytes - event.size
+                carryoverBuffer.assign(from: buffer.advanced(by: event.size), count: carryoverBytes)
+                buffer = buffer.advanced(by: -event.size)
             }
-        } while (bytesRead > 0)
+        } while (carryoverBytes > 0)
 
         return events
     }
