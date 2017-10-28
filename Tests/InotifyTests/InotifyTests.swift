@@ -89,7 +89,6 @@ class InotifyTests: XCTestCase {
 
         inotify.start()
 
-        inotify.stop()
         self.createTestFile()
 
         waitForExpectations(timeout: 0.5, handler: nil)
@@ -132,7 +131,7 @@ class InotifyTests: XCTestCase {
 
         remove(self.createTestFile()!)
 
-        waitForExpectations(timeout: 5, handler: nil)
+        waitForExpectations(timeout: 0.5, handler: nil)
         cleanupDirectoryForTest()
     }
 
@@ -173,7 +172,7 @@ class InotifyTests: XCTestCase {
 
         inotify.stop()
 
-        waitForExpectations(timeout: 1, handler: nil)
+        waitForExpectations(timeout: 0.5, handler: nil)
         XCTAssertFalse(createdEvent)
         cleanupDirectoryForTest()
     }
@@ -206,7 +205,7 @@ class InotifyTests: XCTestCase {
 
         inotify.stop()
 
-        waitForExpectations(timeout: 1, handler: nil)
+        waitForExpectations(timeout: 0.5, handler: nil)
         cleanupDirectoryForTest()
     }
 

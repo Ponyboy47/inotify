@@ -19,6 +19,9 @@ public struct InotifyEvent {
     public let cookie: InotifyCookieType
     public let len: UInt32
     public var name: String? = nil
+    public lazy var size: Int = {
+        return InotifyEvent.minSize + Int(self.len)
+    }()
 
     static public let minSize = MemoryLayout<inotify_event>.size
     static public let maxSize = MemoryLayout<inotify_event>.size + Int(NAME_MAX) + 1
