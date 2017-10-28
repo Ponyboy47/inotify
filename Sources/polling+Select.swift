@@ -13,12 +13,8 @@ public class SelectEventWatcher: InotifyEventWatcher {
         guard let fd = fileDescriptor else {
             throw SelectError.noFileDescriptor
         }
-        var fileDescriptorSet: fd_set = fd_set()
-        let carryoverBuffer: UnsafeMutablePointer<CChar> = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
-        var carryoverBytes: Int = 0
-        var bytesRead: Int = 0
-        var buffer: UnsafeMutablePointer<CChar> = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
 
+        var fileDescriptorSet: fd_set = fd_set()
         fd_zero(&fileDescriptorSet)
         fd_setter(fd, &fileDescriptorSet)
 
