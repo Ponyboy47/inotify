@@ -17,10 +17,10 @@ Annoyed with the lack of FileSystemEvent notifications in Swift on Linux that ar
 ## Usage:
 Add this to your Package.swift:
 ```swift
-.Package(url: "https://github.com/Ponyboy47/inotify.git", majorVersion: 0, minor: 1)
+.Package(url: "https://github.com/Ponyboy47/inotify.git", majorVersion: 0, minor: 2)
 ```
 
-NOTE: The current version of Inotify (0.1.1) uses Swift 3.1.1
+NOTE: The current version of Inotify (0.2.0) uses Swift 3.1.1
 
 Use it like this:
 ```swift
@@ -49,21 +49,41 @@ do {
 
 More examples to come later...
 
+## Creating custom watchers:
+It is possible to write your own watcher that will block a thread until a file descriptor is ready for reading
+By default, I've provided one using the C select API's and I plan on adding more later. (See the Todo for the others I plan on adding and feel free to help me out by making them yourself and submitting a pull request)
+
+There are 2 Protocols to choose from to implement a watcher:
+- InotifyEventWatcher
+- InotifyStoppableEventWatcher
+
+The only difference, is that the Stoppable watcher can be force stopped while it is blocking a thread (ie: receive a signal to be interrupted and stop gracefully, like epoll)
+
+A watcher just needs to monitor the inotify file descriptor for when it is ready to be read from. Once the file descriptor can be read from, unblock the thread and the Inotify class object will handle the actual reading of the file descriptor and subsequent creating of the InotifyEvents and executing of the callbacks.
+
+You can look at polling+Select.swift to see how I implemented the select-based watcher.
+
 ## Known Issues:
 When using the select-based monitoring, calling `inotify.stop()` will not stop the inotify watcher until the next event is triggered
 
 ## Todo:
 - [x] Init with inotify_init1 for flags
 - [x] Useful errors with ErrNo
-- [x] Select based watcher
-- [x] Polling based watcher (untested)
-- [ ] Write tests for the polling based watcher
 - [x] Asynchronous monitoring
 - [ ] Synchronous monitoring
 - [ ] Better error propogation in the asynchronous monitors
 - [ ] Update to Swift 4
-- [ ] Add more watchers
+- [ ] Support various watcher implementations
+  - [ ] select
+  - [ ] manual polling
   - [ ] poll
   - [ ] epoll
   - [ ] pselect
-- [ ] Make watchers more modular (so that others could easily write their own custom ones)
+- [ ] Write tests for the watchers
+  - [x] select
+  - [ ] manual polling
+  - [ ] poll
+  - [ ] epoll
+  - [ ] pselect
+- [x] Make watchers more modular (so that others could easily write their own custom ones)
+- [x] Auto-stop the watcher if there are no more paths to watch (occurs when all paths were one-shot events and they've all been triggered already)
