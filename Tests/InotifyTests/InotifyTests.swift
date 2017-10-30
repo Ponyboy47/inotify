@@ -69,7 +69,7 @@ class InotifyTests: XCTestCase {
 
     func testEventCallback() {
         guard let inotify = try? Inotify() else {
-            XCTFail("Failed to initializy inotify")
+            XCTFail("Failed to initialize inotify")
             return
         }
 
@@ -97,7 +97,7 @@ class InotifyTests: XCTestCase {
 
     func testMultiEventCallbacks() {
         guard let inotify = try? Inotify() else {
-            XCTFail("Failed to initializy inotify")
+            XCTFail("Failed to initialize inotify")
             return
         }
 
@@ -137,7 +137,7 @@ class InotifyTests: XCTestCase {
 
     func testOverwriteEventCallback() {
         guard let inotify = try? Inotify() else {
-            XCTFail("Failed to initializy inotify")
+            XCTFail("Failed to initialize inotify")
             return
         }
 
@@ -179,7 +179,7 @@ class InotifyTests: XCTestCase {
 
     func testGetEventMask() {
         guard let inotify = try? Inotify() else {
-            XCTFail("Failed to initializy inotify")
+            XCTFail("Failed to initialize inotify")
             return
         }
 
@@ -209,9 +209,36 @@ class InotifyTests: XCTestCase {
         cleanupDirectoryForTest()
     }
 
+    func testSelectWatcherTimeout() {
+        let timeout: timeval = timeval(tv_sec: 1, tv_usec: 0)
+        let selectWatcher = SelectEventWatcher(timeout: timeout)
+        guard let inotify = try? Inotify(eventWatcher: selectWatcher) else {
+            XCTFail("Failed to initialize inotify")
+            return
+        }
+
+        let directory = createDirectoryForTest()
+
+        do {
+            try inotify.watch(path: directory, for: [.allEvents, .oneShot]) { _ in
+                XCTFail("Select didn't terminate at the timeout")
+            }
+        } catch {
+            XCTFail("Failed to add allEvents watcher: \(error)")
+            return
+        }
+
+        inotify.start()
+
+        sleep(2)
+
+        self.createTestFile()
+        cleanupDirectoryForTest()
+    }
+
     func testManualPollingEventCallback() {
         guard let inotify = try? Inotify(eventWatcherType: ManualWaitEventWatcher.self) else {
-            XCTFail("Failed to initializy inotify")
+            XCTFail("Failed to initialize inotify")
             return
         }
 
@@ -239,7 +266,7 @@ class InotifyTests: XCTestCase {
 
     func testManualPollingMultiEventCallbacks() {
         guard let inotify = try? Inotify(eventWatcherType: ManualWaitEventWatcher.self) else {
-            XCTFail("Failed to initializy inotify")
+            XCTFail("Failed to initialize inotify")
             return
         }
 
@@ -279,7 +306,7 @@ class InotifyTests: XCTestCase {
 
     func testManualPollingOverwriteEventCallback() {
         guard let inotify = try? Inotify(eventWatcherType: ManualWaitEventWatcher.self) else {
-            XCTFail("Failed to initializy inotify")
+            XCTFail("Failed to initialize inotify")
             return
         }
 
@@ -389,6 +416,7 @@ class InotifyTests: XCTestCase {
         ("testMultiEventCallbacks", testMultiEventCallbacks),
         ("testOverwriteEventCallback", testOverwriteEventCallback),
         ("testGetEventMask", testGetEventMask),
+        ("testSelectWatcherTimeout", testSelectWatcherTimeout),
         ("testManualPollingEventCallback", testManualPollingEventCallback),
         ("testManualPollingMultiEventCallbacks", testManualPollingMultiEventCallbacks),
         ("testManualPollingOverwriteEventCallback", testManualPollingOverwriteEventCallback),

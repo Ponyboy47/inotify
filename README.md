@@ -47,6 +47,88 @@ do {
 }
 ```
 
+Using a different polling implementation:
+```swift
+import Inotify
+
+do {
+    let inotify = try Inotify(eventWatcherType: ManualWaitEventWatcher.self)
+
+    try inotify.watch(path: "/tmp", for: .allEvents) { event in
+        let mask = FileSystemEvent(rawValue: event.mask)
+        print("A(n) \(mask) event was triggered!")
+        if let name = event.name {
+            // This should only be present when the event was triggered on a
+            // file in the watched directory, and not on the directory itself.
+            print("The filename for the event is '\(name)'.")
+        }
+    }
+
+    inotify.start()
+} catch InotifyError.InitError {
+    print("Error initializing the inotify object: \(error)")
+} catch InotifyError.WatchError {
+    print("Error adding watcher to the inotify object: \(error)")
+}
+```
+
+or
+
+```swift
+import Inotify
+
+do {
+    let watcher = ManualWaitEventWatcher()
+    let inotify = try Inotify(eventWatcher: watcher)
+
+    try inotify.watch(path: "/tmp", for: .allEvents) { event in
+        let mask = FileSystemEvent(rawValue: event.mask)
+        print("A(n) \(mask) event was triggered!")
+        if let name = event.name {
+            // This should only be present when the event was triggered on a
+            // file in the watched directory, and not on the directory itself.
+            print("The filename for the event is '\(name)'.")
+        }
+    }
+
+    inotify.start()
+} catch InotifyError.InitError {
+    print("Error initializing the inotify object: \(error)")
+} catch InotifyError.WatchError {
+    print("Error adding watcher to the inotify object: \(error)")
+}
+```
+^^ This can also be used to override default variables for the select or manual wait watchers:
+```swift
+import Inotify
+
+do {
+    // either
+    let watcher = ManualWaitEventWatcher(delay: 0.5)
+    // or
+    let timeout: timeval = timeval(tv_sec: 1, tv_usec: 0)
+    let watcher = SelectEventWatcher(timeout: timeout)
+
+    let inotify = try Inotify(eventWatcher: watcher)
+
+    try inotify.watch(path: "/tmp", for: .allEvents) { event in
+        let mask = FileSystemEvent(rawValue: event.mask)
+        print("A(n) \(mask) event was triggered!")
+        if let name = event.name {
+            // This should only be present when the event was triggered on a
+            // file in the watched directory, and not on the directory itself.
+            print("The filename for the event is '\(name)'.")
+        }
+    }
+
+    inotify.start()
+} catch InotifyError.InitError {
+    print("Error initializing the inotify object: \(error)")
+} catch InotifyError.WatchError {
+    print("Error adding watcher to the inotify object: \(error)")
+}
+```
+
 More examples to come later...
 
 ## Creating custom watchers:
