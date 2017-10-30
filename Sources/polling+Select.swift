@@ -1,11 +1,17 @@
 import CSelect
 import ErrNo
 
-public class SelectEventWatcher: InotifyEventWatcher {
-    public var fileDescriptor: FileDescriptor? = nil
+public struct SelectEventWatcher: InotifyEventWatcher {
+    public var fileDescriptor: FileDescriptor?
     let timeout: timeval?
 
-    init(_ timeout: timeval? = nil) {
+    public init(_ fileDescriptor: FileDescriptor) {
+        self.fileDescriptor = fileDescriptor
+        self.timeout = nil
+    }
+
+    public init(timeout: timeval? = nil) {
+        self.fileDescriptor = nil
         self.timeout = timeout
     }
 

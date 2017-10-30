@@ -63,6 +63,19 @@ A watcher just needs to monitor the inotify file descriptor for when it is ready
 
 You can look at polling+Select.swift to see how I implemented the select-based watcher.
 
+## Which watcher is best?
+
+This really depends on what you plan on doing with it and what kinds of capabilities you need for your project.
+
+The manual poller is probably not ever going to be your first choice because it's horribly inneficient and I mostly just made it for completion sake and so in the simplest of instances you always have something that will work.
+I implemented the select-based one first because I've used select for inotify monitoring before and was already familiar with how to use it.
+I'm not really familiar with poll, epoll, or pselect since I've never used them. 
+
+These links though contain a great amount of information about the differences, shortcomings, and strengths of select, poll, and epoll and may be handy when deciding on which watcher you would like to use:
+- https://www.ulduzsoft.com/2014/01/select-poll-epoll-practical-difference-for-system-architects/
+- https://gist.github.com/beyondwdq/1261042
+- https://jvns.ca/blog/2017/06/03/async-io-on-linux--select--poll--and-epoll/
+
 ## Known Issues:
 When using the select-based monitoring, calling `inotify.stop()` will not stop the inotify watcher until the next event is triggered
 
@@ -74,14 +87,14 @@ When using the select-based monitoring, calling `inotify.stop()` will not stop t
 - [ ] Better error propogation in the asynchronous monitors
 - [ ] Update to Swift 4
 - [ ] Support various watcher implementations
-  - [ ] select
-  - [ ] manual polling
+  - [x] select
+  - [x] manual polling
   - [ ] poll
   - [ ] epoll
   - [ ] pselect
 - [ ] Write tests for the watchers
   - [x] select
-  - [ ] manual polling
+  - [x] manual polling
   - [ ] poll
   - [ ] epoll
   - [ ] pselect

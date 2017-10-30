@@ -54,87 +54,6 @@ public class Inotify {
     }
 
     /**
-        Default initializer. Simply calls inotify_init1(flags = 0)
-
-        - Parameter eventWatcher: The polling API to use for watching for inotify events
-        - Parameter qos: The quality of service to use for the event callbacks
-
-        - Throws: When the file descriptor returned by inotify_init1(flags) is less than 0
-    */
-    public convenience init(eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default) throws {
-        try self.init(flag: .none, eventWatcher: eventWatcher, qos: qos)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - paths: An array of paths to watch
-            - events: An array of the events for which to monitor on each of the paths
-            - actionOnEvent: The callback to use for when an event is triggered on the paths
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(eventWatcher: eventWatcher, qos: qos)
-        try self.watch(paths: paths, for: events, actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - paths: An array of paths to watch
-            - event: A single event for which to monitor on each of the paths
-            - actionOnEvent: The callback to use for when an event is triggered on the paths
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(eventWatcher: eventWatcher, qos: qos, watching: paths, for: [event], actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - path: The path to watch
-            - events: An array of the events for which to monitor on the path
-            - actionOnEvent: The callback to use for when an event is triggered on the path
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(eventWatcher: eventWatcher, qos: qos, watching: [path], for: events, actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - path: The path to watch
-            - event: A single event for which to monitor on the path
-            - actionOnEvent: The callback to use for when an event is triggered on the path
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(eventWatcher: eventWatcher, qos: qos, watching: [path], for: [event], actionOnEvent: callback)
-    }
-
-    /**
         Initializer with inotify flags. Calls inotify_init1(flags)
 
         - Parameters:
@@ -144,7 +63,7 @@ public class Inotify {
 
         - Throws: When the file descriptor returned by inotify_init1() is less than 0
     */
-    public init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default) throws {
+    public init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher, qos: DispatchQoS = .default) throws {
         var initFlags: InotifyFlagType = 0
         for flag in flags {
             initFlags |= flag.rawValue
@@ -168,167 +87,46 @@ public class Inotify {
             throw InotifyError.InitError.unknownInitFailure
         }
         callbackQueue = DispatchQueue(label: "inotify.callback.queue", qos: qos, attributes: [.concurrent])
-        self.eventWatcher = eventWatcher ?? SelectEventWatcher()
+        self.eventWatcher = eventWatcher
         self.eventWatcher.fileDescriptor = fileDescriptor
     }
 
     /**
-        Initializer with an inotify flag. Calls inotify_init1(flags)
+        Initializer with inotify flags. Calls inotify_init1(flags)
 
         - Parameters:
-            - flag: A single flag to pass to inotify_init1(flags)
-            - eventWatcher: The polling API to use for watching for inotify events
+            - flags: An array of flags to pass to inotify_init1(flags)
+            - eventWatcherType: The polling API type to use for watching for inotify events
             - qos: The quality of service to use for the event callbacks
 
         - Throws: When the file descriptor returned by inotify_init1() is less than 0
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default) throws {
-        try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - flags: The inotify flags to use in inotify_init1(flags)
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - paths: An array of paths to watch
-            - events: An array of the events for which to monitor on each of the paths
-            - actionOnEvent: The callback to use for when an event is triggered on the paths
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(flags: flags, eventWatcher: eventWatcher, qos: qos)
-        try self.watch(paths: paths, for: events, actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - flags: The inotify flags to use in inotify_init1(flags)
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - paths: An array of paths to watch
-            - event: A single event for which to monitor on each of the paths
-            - actionOnEvent: The callback to use for when an event is triggered on the paths
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(flags: flags, eventWatcher: eventWatcher, qos: qos, watching: paths, for: [event], actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - flags: The inotify flags to use in inotify_init1(flags)
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - path: The path to watch
-            - events: An array of the events for which to monitor on the path
-            - actionOnEvent: The callback to use for when an event is triggered on the path
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(flags: flags, eventWatcher: eventWatcher, qos: qos, watching: [path], for: events, actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - flags: The inotify flags to use in inotify_init1(flags)
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - path: The path to watch
-            - event: A single event for which to monitor on the path
-            - actionOnEvent: The callback to use for when an event is triggered on the path
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(flags: flags, eventWatcher: eventWatcher, qos: qos, watching: [path], for: [event], actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - flag: The inotify flag to use in inotify_init1(flags)
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - paths: An array of paths to watch
-            - events: An array of the events for which to monitor on each of the paths
-            - actionOnEvent: The callback to use for when an event is triggered on the paths
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos, watching: paths, for: events, actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - flag: The inotify flag to use in inotify_init1(flags)
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - paths: An array of paths to watch
-            - event: A single event for which to monitor on each of the paths
-            - actionOnEvent: The callback to use for when an event is triggered on the paths
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos, watching: paths, for: [event], actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - flag: The inotify flag to use in inotify_init1(flags)
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - path: The path to watch
-            - events: An array of the events for which to monitor on the path
-            - actionOnEvent: The callback to use for when an event is triggered on the path
-
-        - Throws: If the inotify_init() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos, watching: [path], for: events, actionOnEvent: callback)
-    }
-
-    /**
-        Initialize and watch for the specified events on all the paths
-
-        - Parameters:
-            - flag: The inotify flag to use in inotify_init1(flags)
-            - eventWatcher: The polling API to use for watching for inotify events
-            - qos: The quality of service to use for the event callbacks
-            - path: The path to watch
-            - event: A single event for which to monitor on the path
-            - actionOnEvent: The callback to use for when an event is triggered on the path
-
-        - Throws: If the inotify_init1() file descriptor is less than 0
-        - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
-    */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher? = nil, qos: DispatchQoS = .default, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
-        try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos, watching: [path], for: [event], actionOnEvent: callback)
+    public init(flags: [InotifyFlag], eventWatcherType: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default) throws {
+        var initFlags: InotifyFlagType = 0
+        for flag in flags {
+            initFlags |= flag.rawValue
+        }
+        fileDescriptor = inotify_init1(initFlags)
+        guard fileDescriptor >= 0 else {
+            if let error = lastError() {
+                switch error {
+                case EINVAL:
+                    throw InotifyError.InitError.invalidInitFlag(initFlags)
+                case EMFILE:
+                    throw InotifyError.InitError.localLimitReached
+                case ENFILE:
+                    throw InotifyError.InitError.systemLimitReached
+                case ENOMEM:
+                    throw InotifyError.InitError.noKernelMemory
+                default:
+                    throw InotifyError.InitError.unknownInitFailure
+                }
+            }
+            throw InotifyError.InitError.unknownInitFailure
+        }
+        callbackQueue = DispatchQueue(label: "inotify.callback.queue", qos: qos, attributes: [.concurrent])
+        // Can't use the nil coalescing operator (??) because it uses a closure that captures self before self is fully initialized
+        self.eventWatcher = eventWatcherType == nil ? SelectEventWatcher(fileDescriptor) : eventWatcherType!.init(fileDescriptor)
     }
 
     /**
