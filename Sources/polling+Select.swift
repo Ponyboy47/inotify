@@ -25,6 +25,19 @@ public struct SelectEventWatcher: InotifyEventWatcher {
         fd_setter(fd, &fileDescriptorSet)
 
         let count: Int32
+
+        /*
+        On Linux, select() modifies timeout to reflect the amount of time not
+        slept; most other  implementations  do not  do  this.   (POSIX.1
+        permits  either behavior.)  This causes problems both when Linux code
+        which reads timeout is ported to other operating systems, and when code
+        is ported to Linux that reuses a struct  timeval for multiple select()s
+        in a loop without reinitializing it.  Consider timeout to be undefined
+        after select() returns.
+        */
+
+        // ^^ This is why we use var t like this here, but after select
+        // executes we ignore it and continue as though it never existed
         if var t = timeout {
             count = select(FD_SETSIZE, &fileDescriptorSet, nil, nil, &t)
         } else {

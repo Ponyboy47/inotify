@@ -21,7 +21,6 @@ Implementation Notes:
             - Structs would only be copied once*
         - Modifying a class does not recreate a new copy if it is modified
             - By default, structs are guaranteed to have to be recreated once when the inotify file descriptor is created*
-            - The manual poller is a class because long running watchers would modify one of its attributes a lot, whereas the select poller is a struct since the only thing ever modified would be the fileDescriptor
         - Structs may reduce overall complexity of an object
         - Classes have better inheritance capabilities
             - Although we don't really need complicated inheritance for this

@@ -260,7 +260,7 @@ class InotifyTests: XCTestCase {
 
         self.createTestFile()
 
-        waitForExpectations(timeout: 2.5, handler: nil)
+        waitForExpectations(timeout: 2.1, handler: nil)
         cleanupDirectoryForTest()
     }
 
@@ -300,7 +300,7 @@ class InotifyTests: XCTestCase {
 
         remove(self.createTestFile()!)
 
-        waitForExpectations(timeout: 5, handler: nil)
+        waitForExpectations(timeout: 2.1, handler: nil)
         cleanupDirectoryForTest()
     }
 
@@ -341,8 +341,34 @@ class InotifyTests: XCTestCase {
 
         inotify.stop()
 
-        waitForExpectations(timeout: 0.5, handler: nil)
+        waitForExpectations(timeout: 2.1, handler: nil)
         XCTAssertFalse(createdEvent)
+        cleanupDirectoryForTest()
+    }
+
+    func testManualPollingWatcherDelay() {
+        let manualWatcher = ManualWaitEventWatcher(delay: 0.5)
+        guard let inotify = try? Inotify(eventWatcher: manualWatcher) else {
+            XCTFail("Failed to initialize inotify")
+            return
+        }
+
+        let directory = createDirectoryForTest()
+        let expt_create5 = self.expectation(description: "create5")
+
+        do {
+            try inotify.watch(path: directory, for: [.allEvents, .oneShot]) { _ in
+                expt_create5.fulfill()
+            }
+        } catch {
+            XCTFail("Failed to add allEvents watcher: \(error)")
+            return
+        }
+
+        inotify.start()
+
+        self.createTestFile()
+        waitForExpectations(timeout: 0.6, handler: nil)
         cleanupDirectoryForTest()
     }
 
@@ -420,5 +446,6 @@ class InotifyTests: XCTestCase {
         ("testManualPollingEventCallback", testManualPollingEventCallback),
         ("testManualPollingMultiEventCallbacks", testManualPollingMultiEventCallbacks),
         ("testManualPollingOverwriteEventCallback", testManualPollingOverwriteEventCallback),
+        ("testManualPollingWatcherDelay", testManualPollingWatcherDelay),
     ]
 }

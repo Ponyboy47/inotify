@@ -23,14 +23,18 @@ public struct InotifyEvent {
         return InotifyEvent.minSize + Int(self.len)
     }()
 
+    /// The mininum bytesize of an inotify_event struct
     static public let minSize = MemoryLayout<inotify_event>.size
+    /// The maximum bytesize of an inotify_event struct
     static public let maxSize = MemoryLayout<inotify_event>.size + Int(NAME_MAX) + 1
     static public let stride = MemoryLayout<inotify_event>.stride
     static public let alignment = MemoryLayout<inotify_event>.alignment
 
     public init(from buffer: UnsafePointer<CChar>) {
+        // Copy the data from the buffer into an event pointer
         let eventPointer = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.minSize)
         eventPointer.assign(from: buffer, count: InotifyEvent.minSize)
+        // Ensure the event pointer's memory is deallocated after the InotifyEvent object is created
         defer {
             eventPointer.deallocate(capacity: InotifyEvent.minSize)
         }

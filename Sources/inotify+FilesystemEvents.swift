@@ -6,9 +6,11 @@ public typealias RawFileSystemEventType = Int32
 public typealias FileSystemEventType = UInt32
 
 /// An enum with all the possible events for which inotify can watch
-public enum FileSystemEvent: Hashable {
+public enum FileSystemEvent: Hashable, Equatable {
     /// A set of the events that may be included in the inotify_event struct's mask
-    static var masked: Set<FileSystemEvent> = Set([.access, .modify, .attribute, .closeWrite, .closeNoWrite, .closed, .open, .movedFrom, .movedTo, .moved, .create, .delete, .deleteSelf, .moveSelf])
+    static let inEventMask: Set<FileSystemEvent> = allEventsSet.union(FileSystemEvent.onlyInEventMask)
+    static let allEventsSet: Set<FileSystemEvent> = Set([.access, .modify, .attribute, .closeWrite, .closeNoWrite, .closed, .open, .movedFrom, .movedTo, .moved, .create, .delete, .deleteSelf, .moveSelf])
+    static let onlyInEventMask: Set<FileSystemEvent> = Set([.ignored, .isDirectory, .queueOverflow, .unmount])
 
     /// The file was accessed (e.g. read(2), execve(2))
     case access
@@ -106,7 +108,9 @@ public enum FileSystemEvent: Hashable {
     }
 
     public init(rawValue: FileSystemEventType) {
-        if let mask = FileSystemEvent.masked.first(where: { mask in
+        // The if-let-else format allows us to use the .other case and avoid
+        // making this a failable initializer
+        if let mask = FileSystemEvent.inEventMask.first(where: { mask in
             return mask.rawValue == rawValue
         }) {
             self = mask
@@ -115,6 +119,7 @@ public enum FileSystemEvent: Hashable {
         }
     }
 
+    // Use a switch to get the raw values straight from Glibc rather than hard coded values
     public var rawValue: FileSystemEventType {
         let value: RawFileSystemEventType
         switch self {
@@ -167,13 +172,31 @@ public enum FileSystemEvent: Hashable {
         case .other(let raw):
             return raw
         default:
-            value = IN_ACCESS | IN_ATTRIB | IN_CLOSE | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE | IN_OPEN
+            value = IN_ACCESS | IN_ATTRIB | IN_CLOSE | IN_CREATE | IN_DELETE | IN_DELETE_SELF | IN_MODIFY | IN_MOVE | IN_MOVE_SELF | IN_OPEN
         }
         return FileSystemEventType(value)
     }
-}
 
-public func ==(lhs: FileSystemEvent, rhs: FileSystemEvent) -> Bool {
-    return lhs.rawValue == rhs.rawValue
-}
+    public static func ==(lhs: FileSystemEvent, rhs: FileSystemEvent) -> Bool {
+        return lhs.rawValue == rhs.rawValue
+    }
+    public static func ==(lhs: FileSystemEvent, rhs: FileSystemEventType) -> Bool {
+        return lhs.rawValue == rhs
+    }
+    public static func ==(lhs: FileSystemEventType, rhs: FileSystemEvent) -> Bool {
+        return lhs == rhs.rawValue
+    }
 
+    // I don't know why, but I apparently need to implement these too in order
+    // for != to work?? I thought it should use the above and then NOT the
+    // result...
+    public static func !=(lhs: FileSystemEvent, rhs: FileSystemEvent) -> Bool {
+        return lhs.rawValue != rhs.rawValue
+    }
+    public static func !=(lhs: FileSystemEvent, rhs: FileSystemEventType) -> Bool {
+        return lhs.rawValue != rhs
+    }
+    public static func !=(lhs: FileSystemEventType, rhs: FileSystemEvent) -> Bool {
+        return lhs != rhs.rawValue
+    }
+}

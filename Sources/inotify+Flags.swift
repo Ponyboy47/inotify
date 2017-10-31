@@ -23,6 +23,7 @@ public enum InotifyFlag {
     */
     case closeOnExec
 
+    // Use a switch to get the raw values straight from Glibc rather than hard coded values
     public var rawValue: InotifyFlagType {
         let value: RawInotifyFlagType
         switch self {

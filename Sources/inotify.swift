@@ -34,8 +34,6 @@ public class Inotify {
         fileprivate let descriptor: WatchDescriptor
         /// The file path being watched
         fileprivate let path: FilePath
-        /// The event mask that inotify is watching for
-        fileprivate let mask: FileSystemEventType
         /// The callback to use when an event gets triggered
         fileprivate let callback: InotifyEventAction
         /**
@@ -43,12 +41,19 @@ public class Inotify {
             from the watcher array after being used once
         */
         fileprivate let oneShot: Bool
+        fileprivate let possibleEvents: Set<FileSystemEvent>
 
-        public init(_ descriptor: WatchDescriptor, _ path: FilePath, _ mask: FileSystemEventType, _ oneShot: Bool = false, _ callback: @escaping InotifyEventAction) {
+        public init(_ descriptor: WatchDescriptor, _ path: FilePath, _ possibleEvents: [FileSystemEvent], _ callback: @escaping InotifyEventAction) {
             self.descriptor = descriptor
             self.path = path
-            self.mask = mask
-            self.oneShot = oneShot
+            var events = Set(possibleEvents)
+            if events.contains(.allEvents) {
+                events.formUnion(FileSystemEvent.allEventsSet)
+            }
+            self.oneShot = events.contains(.oneShot)
+
+            self.possibleEvents = events.intersection(FileSystemEvent.inEventMask)
+
             self.callback = callback
         }
     }
@@ -145,8 +150,12 @@ public class Inotify {
             throw InotifyError.WatchError.noEvents
         }
 
+        // Get the full mask with all events OR-ed together, excluding events
+        // that shouldn't be included in the inotify_add_watch (like .ignored,
+        // .isDirectory, etc) see inotify documentation for more info
         var mask: FileSystemEventType = 0
-        for event in Set(events) {
+        let addToWatchMask = Set(events).subtracting(FileSystemEvent.onlyInEventMask)
+        for event in addToWatchMask {
             mask |= event.rawValue
         }
 
@@ -178,21 +187,16 @@ public class Inotify {
             throw InotifyError.WatchError.unknownWatchFailure(path, mask)
         }
 
+        // If the event is not an IN_MASK_ADD event and there is another
+        // watcher using the same descriptor, then we need to remove the
+        // existing watcher before adding the new one
         if !events.contains(.maskAdd), let watcherIndex = watchers.index(where: { (watcher) in
             return watcher.descriptor == watchDescriptor
         }) {
             watchers.remove(at: watcherIndex)
         }
 
-        let unmasked = Set(events).intersection(FileSystemEvent.masked)
-        if Set(events) != unmasked {
-            mask = 0
-            for event in unmasked {
-                mask |= event.rawValue
-            }
-        }
-
-        watchers.append(Watcher(watchDescriptor, path, mask, events.contains(.oneShot), callback))
+        watchers.append(Watcher(watchDescriptor, path, events, callback))
     }
 
     /**
@@ -278,8 +282,7 @@ public class Inotify {
         self.shouldMonitor = true
         self.pollQueue.async {
             do {
-                while self.shouldMonitor {
-
+                repeat {
                     // Blocks until events have been triggered
                     try self.eventWatcher.wait()
 
@@ -287,30 +290,42 @@ public class Inotify {
 
                     for event in events {
                         guard let watcherIndex = self.watchers.index(where: { (watcher) in
-                            return watcher.descriptor == event.wd && watcher.mask == event.mask
+                            return watcher.descriptor == event.wd && watcher.possibleEvents.contains(FileSystemEvent(rawValue: event.mask))
                         }) else {
                             throw InotifyError.EventError.noWatcherWithDescriptor(event.wd)
                         }
                         let watcher = self.watchers[watcherIndex]
 
-                        self.callbackQueue.async {
-                            watcher.callback(event)
+                        // Since events may return with the .ignored mask,
+                        // don't execute the callback when the mask is .ignored
+                        if event.mask != FileSystemEvent.ignored {
+                            self.callbackQueue.async {
+                                watcher.callback(event)
+                            }
                         }
+
+                        // Remove .oneShot events from the array of watchers
                         if watcher.oneShot {
                             self.watchers.remove(at: watcherIndex)
+                            // If there are no events left then we can just stop
                             guard self.watchers.count > 0 else {
                                 self.stop()
                                 break
                             }
                         }
                     }
-                }
+                } while (self.shouldMonitor)
+            } catch SelectError.timeout {
+                // The select timeout happened because it took too long for
+                // another event to be generated. Stop the inotify mointor now
+                self.stop()
             } catch {
                 print("An error occurred while waiting for inotify events: \(error)")
             }
         }
     }
 
+    /// Reads the inotify file descriptor until all inotify_events have been parsed into InotifyEvent objects
     private func getEvents() throws -> [InotifyEvent] {
         var carryoverBuffer: UnsafeMutablePointer<CChar> = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
         var carryoverBytes: Int = 0
@@ -391,82 +406,14 @@ public class Inotify {
         return events
     }
 
-    private func manualMonitor(actionQueue queue: DispatchQueue, readDelay delay_timeval: timeval? = nil) throws {
-        self.shouldMonitor = true
-        let delay: Double
-        if let d = delay_timeval {
-            delay = Double(d.tv_sec) + (Double(d.tv_usec) / 1000000.00)
-        } else {
-            delay = 2.0
-        }
-
-        var lastRead: Date = Date()
-        let carryoverBuffer: UnsafeMutablePointer<CChar> = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
-        var carryoverBytes: Int = 0
-        var bytesRead: Int = 0
-        var buffer = UnsafeMutablePointer<CChar>.allocate(capacity: InotifyEvent.maxSize)
-        while self.shouldMonitor {
-            repeat {
-                if carryoverBytes > 0 {
-                    buffer.assign(from: carryoverBuffer, count: carryoverBytes)
-                    buffer = buffer.advanced(by: carryoverBytes)
-                }
-
-                // wait to read again unless it's been at least a delay's
-                // amount of time, or if there were bytes leftover from the
-                // last read
-                repeat {
-                    if carryoverBytes > 0 {
-                        break
-                    }
-                } while (lastRead.timeIntervalSinceNow < -delay)
-
-                // I have no idea what's going on, but reading the inotify
-                // event data into the buffer totally screws up the
-                // carryoverBytes variable. Setting the oldBytes variable and
-                // then re-assigning to carryoverBytes after the read seems to
-                // fix this...
-                let oldBytes = carryoverBytes
-                bytesRead = read(self.fileDescriptor, buffer, InotifyEvent.maxSize)
-                lastRead = Date()
-                carryoverBytes = oldBytes
-                buffer = buffer.advanced(by: -carryoverBytes)
-
-                // Ensure the bytes read is large enough to cast to an
-                // inotify_event, or just skip this event in the buffer
-                guard bytesRead + carryoverBytes >= InotifyEvent.minSize else {
-                    continue
-                }
-
-                let event = InotifyEvent(from: buffer)
-                guard let watcher = self.watchers.first(where: { (watcher) in
-                    return watcher.descriptor == event.wd
-                }) else {
-                    throw InotifyError.EventError.noWatcherWithDescriptor(event.wd)
-                }
-
-                queue.async {
-                    watcher.callback(event)
-                }
-
-                let bytesUsed = InotifyEvent.minSize + Int(event.len)
-                if bytesRead + carryoverBytes > bytesUsed {
-                    carryoverBytes = bytesRead + carryoverBytes - bytesUsed
-                    carryoverBuffer.assign(from: buffer.advanced(by: bytesUsed), count: carryoverBytes)
-                    buffer = buffer.advanced(by: -bytesUsed)
-                }
-            } while (bytesRead > 0)
-        }
-        buffer.deallocate(capacity: bytesRead)
-        carryoverBuffer.deallocate(capacity: InotifyEvent.maxSize)
-    }
-
+    /// Stops monitoring for changes to the inotify file descriptor
     public func stop() {
         self.shouldMonitor = false
         // If the event watcher can be stopped, then force stop it
         (self.eventWatcher as? InotifyStoppableEventWatcher)?.stop()
     }
 
+    // Make sure the inotify file descriptor is properly closed when we're done with it
     deinit {
         close(self.fileDescriptor)
     }
