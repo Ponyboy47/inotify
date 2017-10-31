@@ -1,4 +1,6 @@
 # Inotify
+![Version](https://img.shields.io/badge/inotify-v0.3.0-blue.svg)] [![Build Status](https://travis-ci.org/Ponyboy47/inotify.svg?branch=master)](https://travis-ci.org/Ponyboy47/inotify)
+
 A swifty wrapper around Linux's inotify API. Trying to make using inotify in Swift as easy as possible.
 
 Annoyed with the lack of FileSystemEvent notifications in Swift on Linux that are easily accessible to Swift on iOS/macOS? Well now there's no need to fret! Using the Linux inotify API's, this library is bringing first class support for file notifications to Swift! Easily watch files and directories for a large set of events and perform callbacks immediately when those events are triggered.
