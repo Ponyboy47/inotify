@@ -1,5 +1,5 @@
 # Inotify
-![Version](https://img.shields.io/badge/inotify-v0.3.0-blue.svg)] [![Build Status](https://travis-ci.org/Ponyboy47/inotify.svg?branch=master)](https://travis-ci.org/Ponyboy47/inotify)
+![Version](https://img.shields.io/badge/inotify-v0.3.0-blue.svg) [![Build Status](https://travis-ci.org/Ponyboy47/inotify.svg?branch=master)](https://travis-ci.org/Ponyboy47/inotify)
 
 A swifty wrapper around Linux's inotify API. Trying to make using inotify in Swift as easy as possible.
 
