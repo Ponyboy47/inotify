@@ -17,10 +17,10 @@ Annoyed with the lack of FileSystemEvent notifications in Swift on Linux that ar
 ## Usage:
 Add this to your Package.swift:
 ```swift
-.Package(url: "https://github.com/Ponyboy47/inotify.git", majorVersion: 0, minor: 2)
+.Package(url: "https://github.com/Ponyboy47/inotify.git", majorVersion: 0, minor: 3)
 ```
 
-NOTE: The current version of Inotify (0.2.0) uses Swift 3.1.1
+NOTE: The current version of Inotify (0.3.0) uses Swift 3.1.1
 
 Use it like this:
 ```swift
