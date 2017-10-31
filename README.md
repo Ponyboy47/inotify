@@ -132,25 +132,24 @@ do {
 More examples to come later...
 
 ## Creating custom watchers:
-It is possible to write your own watcher that will block a thread until a file descriptor is ready for reading
-By default, I've provided one using the C select API's and I plan on adding more later. (See the Todo for the others I plan on adding and feel free to help me out by making them yourself and submitting a pull request)
+It is possible to write your own watcher that will block a thread until a file descriptor is ready for reading. By default, I've provided one using the C select API's and I plan on adding more later. (See the Todo for the others I plan on adding and feel free to help me out by making them yourself and submitting a pull request)
 
-There are 2 Protocols to choose from to implement a watcher:
+There are 2 Protocols to choose from when implementing a watcher:
 - InotifyEventWatcher
 - InotifyStoppableEventWatcher
 
 The only difference, is that the Stoppable watcher can be force stopped while it is blocking a thread (ie: receive a signal to be interrupted and stop gracefully, like epoll)
 
-A watcher just needs to monitor the inotify file descriptor for when it is ready to be read from. Once the file descriptor can be read from, unblock the thread and the Inotify class object will handle the actual reading of the file descriptor and subsequent creating of the InotifyEvents and executing of the callbacks.
+A watcher just needs to monitor the inotify file descriptor and block a thread. Once the file descriptor is prepared to be read from, unblock the thread and the Inotify class object will handle the actual reading of the file descriptor and subsequent creating of the InotifyEvents and executing of the callbacks.
 
-You can look at polling+Select.swift to see how I implemented the select-based watcher.
+You can look at polling+Select.swift to see how I implemented the select-based watcher. It may be helpful to read the select man pages (or other documentation) in order to more fully understand what it does in the backend.
 
 ## Which watcher is best?
 
 This really depends on what you plan on doing with it and what kinds of capabilities you need for your project.
 
-The manual poller is probably not ever going to be your first choice because it's horribly inneficient and I mostly just made it for completion sake and so in the simplest of instances you always have something that will work.
-I implemented the select-based one first because I've used select for inotify monitoring before and was already familiar with how to use it.
+The manual poller is probably not ever going to be your first choice because it's horribly inneficient and I mostly just made it for completion sake and so in the simplest of instances you always have something that will work.<br>
+I implemented the select-based watcher first because I've used select for inotify monitoring before and was already familiar with how to use it.<br>
 I'm not really familiar with poll, epoll, or pselect since I've never used them. 
 
 These links though contain a great amount of information about the differences, shortcomings, and strengths of select, poll, and epoll and may be handy when deciding on which watcher you would like to use:
@@ -169,16 +168,16 @@ When using the select-based monitoring, calling `inotify.stop()` will not stop t
 - [ ] Better error propogation in the asynchronous monitors
 - [ ] Update to Swift 4
 - [ ] Support various watcher implementations
-  - [x] select
   - [x] manual polling
+  - [x] select
+  - [ ] pselect
   - [ ] poll
   - [ ] epoll
-  - [ ] pselect
 - [ ] Write tests for the watchers
-  - [x] select
   - [x] manual polling
+  - [x] select
+  - [ ] pselect
   - [ ] poll
   - [ ] epoll
-  - [ ] pselect
 - [x] Make watchers more modular (so that others could easily write their own custom ones)
 - [x] Auto-stop the watcher if there are no more paths to watch (occurs when all paths were one-shot events and they've all been triggered already)
