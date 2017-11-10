@@ -101,12 +101,12 @@ public class Inotify {
 
         - Parameters:
             - flags: An array of flags to pass to inotify_init1(flags)
-            - eventWatcherType: The polling API type to use for watching for inotify events
+            - eventWatcher: The polling API type to use for watching for inotify events
             - qos: The quality of service to use for the event callbacks
 
         - Throws: When the file descriptor returned by inotify_init1() is less than 0
     */
-    public init(flags: [InotifyFlag], eventWatcherType: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default) throws {
+    public init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default) throws {
         var initFlags: InotifyFlagType = 0
         for flag in flags {
             initFlags |= flag.rawValue
@@ -131,7 +131,83 @@ public class Inotify {
         }
         callbackQueue = DispatchQueue(label: "inotify.callback.queue", qos: qos, attributes: [.concurrent])
         // Can't use the nil coalescing operator (??) because it uses a closure that captures self before self is fully initialized
-        self.eventWatcher = eventWatcherType == nil ? SelectEventWatcher(fileDescriptor) : eventWatcherType!.init(fileDescriptor)
+        self.eventWatcher = eventWatcher == nil ? SelectEventWatcher(fileDescriptor) : eventWatcher!.init(fileDescriptor)
+    }
+
+    /**
+        Initializer with inotify flags. Calls inotify_init1(flags)
+
+        - Parameters:
+            - flags: An array of flags to pass to inotify_init1(flags)
+            - eventWatcher: The polling API to use for watching for inotify events
+            - queue: The queue to use for the event callbacks
+
+        - Throws: When the file descriptor returned by inotify_init1() is less than 0
+    */
+    public init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher, queue: DispatchQueue) throws {
+        var initFlags: InotifyFlagType = 0
+        for flag in flags {
+            initFlags |= flag.rawValue
+        }
+        fileDescriptor = inotify_init1(initFlags)
+        guard fileDescriptor >= 0 else {
+            if let error = lastError() {
+                switch error {
+                case EINVAL:
+                    throw InotifyError.InitError.invalidInitFlag(initFlags)
+                case EMFILE:
+                    throw InotifyError.InitError.localLimitReached
+                case ENFILE:
+                    throw InotifyError.InitError.systemLimitReached
+                case ENOMEM:
+                    throw InotifyError.InitError.noKernelMemory
+                default:
+                    throw InotifyError.InitError.unknownInitFailure
+                }
+            }
+            throw InotifyError.InitError.unknownInitFailure
+        }
+        callbackQueue = queue
+        self.eventWatcher = eventWatcher
+        self.eventWatcher.fileDescriptor = fileDescriptor
+    }
+
+    /**
+        Initializer with inotify flags. Calls inotify_init1(flags)
+
+        - Parameters:
+            - flags: An array of flags to pass to inotify_init1(flags)
+            - eventWatcher: The polling API type to use for watching for inotify events
+            - queue: The queue to use for the event callbacks
+
+        - Throws: When the file descriptor returned by inotify_init1() is less than 0
+    */
+    public init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue) throws {
+        var initFlags: InotifyFlagType = 0
+        for flag in flags {
+            initFlags |= flag.rawValue
+        }
+        fileDescriptor = inotify_init1(initFlags)
+        guard fileDescriptor >= 0 else {
+            if let error = lastError() {
+                switch error {
+                case EINVAL:
+                    throw InotifyError.InitError.invalidInitFlag(initFlags)
+                case EMFILE:
+                    throw InotifyError.InitError.localLimitReached
+                case ENFILE:
+                    throw InotifyError.InitError.systemLimitReached
+                case ENOMEM:
+                    throw InotifyError.InitError.noKernelMemory
+                default:
+                    throw InotifyError.InitError.unknownInitFailure
+                }
+            }
+            throw InotifyError.InitError.unknownInitFailure
+        }
+        callbackQueue = queue
+        // Can't use the nil coalescing operator (??) because it uses a closure that captures self before self is fully initialized
+        self.eventWatcher = eventWatcher == nil ? SelectEventWatcher(fileDescriptor) : eventWatcher!.init(fileDescriptor)
     }
 
     /**
