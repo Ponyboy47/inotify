@@ -1,4 +1,4 @@
-import CSelect
+import Cselect
 import ErrNo
 import Strand
 
