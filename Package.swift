@@ -1,11 +1,25 @@
-// swift-tools-version:3.1
+// swift-tools-version:4.0
 
 import PackageDescription
 
 let package = Package(
     name: "Inotify",
+    products: [
+        .library(
+            name: "Inotify",
+            targets: ["Inotify"]),
+    ],
     dependencies: [
-        .Package(url: "https://github.com/Ponyboy47/Cinotify.git", majorVersion: 2),
-        .Package(url: "https://github.com/Ponyboy47/ErrNo.git", majorVersion: 0, minor: 2)
+        .package(url: "https://github.com/Ponyboy47/Cinotify.git", .upToNextMajor(from: "2.0.0")),
+        .package(url: "https://github.com/Ponyboy47/ErrNo.git", .upToNextMinor(from: "0.3.0")),
+        .package(url: "https://github.com/Ponyboy47/Strand.git", .upToNextMinor(from: "2.0.0")),
+    ],
+    targets: [
+        .target(
+            name: "Inotify",
+            dependencies: ["Cinotify", "ErrNo", "Strand"]),
+        .testTarget(
+            name: "InotifyTests",
+            dependencies: ["Inotify", "ErrNo"]),
     ]
 )

@@ -9,6 +9,7 @@ public protocol InotifyEventWatcher {
 
 /// A specialiced InotifyWatcher that can be stopped while actively watching for Inotify events
 public protocol InotifyStoppableEventWatcher: InotifyEventWatcher {
+    var running: Bool { get set }
     /// The function that is called to stop the watcher
     func stop()
 }

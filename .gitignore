@@ -4,6 +4,9 @@
 /Packages
 /*.xcodeproj
 /Package.pins
+/Package.resolved
 
 # Vim swap files
 .*.sw[po]
+
+.AppleDouble

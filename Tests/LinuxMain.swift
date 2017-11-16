@@ -2,5 +2,7 @@ import XCTest
 @testable import InotifyTests
 
 XCTMain([
-    testCase(InotifyTests.allTests),
+    testCase(InotifyInitTests.allTests),
+    testCase(InotifySelectTests.allTests),
+    testCase(InotifyManualWaitTests.allTests),
 ])
