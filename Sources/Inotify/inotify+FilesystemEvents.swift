@@ -115,9 +115,46 @@ public enum FileSystemEvent: Hashable, Equatable {
         }) {
             self = mask
         } else {
+            let special = FileSystemEvent.onlyInEventMask
+            var matches: Set<FileSystemEvent> = Set<FileSystemEvent>()
+            for events in FileSystemEvent.specialEventCombinations {
+                let reduced = events.reduce(0, { one, two in return one | two.rawValue })
+                if reduced == rawValue {
+                    matches.formUnion(Set(events).subtracting(special))
+                }
+            }
+            if matches.count == 1 {
+                self = matches.first!
+                return
+            } else if matches.count > 1 {
+                fatalError("Found multiple masks matching the raw value!\nMask: \(rawValue) - Matches: \(matches)")
+            }
             self = .other(rawValue)
         }
     }
+
+    private static var specialEventCombinations: [[FileSystemEvent]] = {
+        func combos(from source: [FileSystemEvent]) -> [[FileSystemEvent]] {
+            guard source.count > 0 else { return [source] }
+
+            let head = source[0]
+            let tail = Array(source[1...])
+
+            let withoutHead = combos(from: tail)
+            let withHead = withoutHead.map { $0 + [head] }
+
+            return withHead + withoutHead
+        }
+
+        var results: [[FileSystemEvent]] = []
+        for possibleEvent in FileSystemEvent.allEventsSet {
+            let combinations = combos(from: [possibleEvent] + Array(FileSystemEvent.onlyInEventMask)).filter { combo in
+                return combo.contains(possibleEvent)
+            }
+            results.append(contentsOf: combinations)
+        }
+        return results
+    }()
 
     // Use a switch to get the raw values straight from Glibc rather than hard coded values
     public var rawValue: FileSystemEventType {

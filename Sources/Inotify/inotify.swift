@@ -365,11 +365,27 @@ public class Inotify {
                     let events: [InotifyEvent] = try self.getEvents()
 
                     for event in events {
-                        guard let watcherIndex = self.watchers.index(where: { (watcher) in
-                            return watcher.descriptor == event.wd && watcher.possibleEvents.contains(FileSystemEvent(rawValue: event.mask))
-                        }) else {
-                            throw InotifyError.EventError.noWatcherWithDescriptor(event.wd)
-                        }
+                        let watcherIndex: Int
+                        // if event.cookie == 0 && events.count > 1 {
+                            guard let wI = self.watchers.index(where: { (watcher) in
+                                return watcher.descriptor == event.wd && watcher.possibleEvents.contains(FileSystemEvent(rawValue: event.mask))
+                            }) else {
+                                throw InotifyError.EventError.noWatcherWithDescriptor(event.wd)
+                            }
+                            watcherIndex = wI
+                        // } else {
+                        //     guard let otherIndex = events.index(where: { (e) in
+                        //         return e.cookie == event.cookie && event.mask != e.mask
+                        //     }) else {
+                        //         throw InotifyError.EventError.noEventWithCookie(event.cookie)
+                        //     }
+                        //     guard let wI = self.watchers.index(where: { (watcher) in
+                        //         return watcher.descriptor == event.wd
+                        //     }) else {
+                        //         throw InotifyError.EventError.noWatcherWithDescriptor(event.wd)
+                        //     }
+                        //     watcherIndex = wI
+                        // }
                         let watcher = self.watchers[watcherIndex]
 
                         // Since events may return with the .ignored mask,
