@@ -183,3 +183,5 @@ When using the select-based monitoring, calling `inotify.stop()` will not stop t
   - [ ] epoll
 - [x] Make watchers more modular (so that others could easily write their own custom ones)
 - [x] Auto-stop the watcher if there are no more paths to watch (occurs when all paths were one-shot events and they've all been triggered already)
+- [ ] Handle inotify event cookie values
+- [ ] Automatically set up recursive watchers (Since by default inotify only monitors one directory deep)
