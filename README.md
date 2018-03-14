@@ -160,7 +160,6 @@ These links though contain a great amount of information about the differences, 
 - https://jvns.ca/blog/2017/06/03/async-io-on-linux--select--poll--and-epoll/
 
 ## Known Issues:
-When using the select-based monitoring, calling `inotify.stop()` will not stop the inotify watcher until the next event is triggered
 
 ## Todo:
 - [x] Init with inotify_init1 for flags
@@ -168,11 +167,11 @@ When using the select-based monitoring, calling `inotify.stop()` will not stop t
 - [x] Asynchronous monitoring
 - [ ] Synchronous monitoring
 - [ ] Better error propogation in the asynchronous monitors
-- [ ] Update to Swift 4
+- [x] Update to Swift 4
 - [ ] Support various watcher implementations
   - [x] manual polling
   - [x] select
-  - [ ] pselect
+  - [ ] pselect // Maybe not
   - [ ] poll
   - [ ] epoll
 - [ ] Write tests for the watchers

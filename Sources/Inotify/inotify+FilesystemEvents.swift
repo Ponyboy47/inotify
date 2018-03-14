@@ -6,7 +6,7 @@ public typealias RawFileSystemEventType = Int32
 public typealias FileSystemEventType = UInt32
 
 /// An enum with all the possible events for which inotify can watch
-public enum FileSystemEvent: Hashable, Equatable {
+public enum FileSystemEvent: Hashable {
     /// A set of the events that may be included in the inotify_event struct's mask
     static let inEventMask: Set<FileSystemEvent> = allEventsSet.union(FileSystemEvent.onlyInEventMask)
     static let allEventsSet: Set<FileSystemEvent> = Set([.access, .modify, .attribute, .closeWrite, .closeNoWrite, .closed, .open, .movedFrom, .movedTo, .moved, .create, .delete, .deleteSelf, .moveSelf])

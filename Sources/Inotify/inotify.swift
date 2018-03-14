@@ -14,7 +14,7 @@ public typealias FilePath = String
 public typealias InotifyEventAction = (InotifyEvent) -> ()
 
 /// A high level class for interacting with inotify APIs
-public class Inotify {
+public final class Inotify {
     /// The file descriptor created by inotify_init()
     private let fileDescriptor: FileDescriptor
     /// An array of Watcher structs for each path being watched
@@ -106,7 +106,7 @@ public class Inotify {
 
         - Throws: When the file descriptor returned by inotify_init1() is less than 0
     */
-    public init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default) throws {
+    public init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default) throws {
         var initFlags: InotifyFlagType = 0
         for flag in flags {
             initFlags |= flag.rawValue
@@ -130,8 +130,7 @@ public class Inotify {
             throw InotifyError.InitError.unknownInitFailure
         }
         callbackQueue = DispatchQueue(label: "inotify.callback.queue", qos: qos, attributes: [.concurrent])
-        // Can't use the nil coalescing operator (??) because it uses a closure that captures self before self is fully initialized
-        self.eventWatcher = eventWatcher == nil ? SelectEventWatcher(fileDescriptor) : eventWatcher!.init(fileDescriptor)
+        self.eventWatcher = eventWatcher.init(fileDescriptor)
     }
 
     /**
@@ -182,7 +181,7 @@ public class Inotify {
 
         - Throws: When the file descriptor returned by inotify_init1() is less than 0
     */
-    public init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue) throws {
+    public init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue) throws {
         var initFlags: InotifyFlagType = 0
         for flag in flags {
             initFlags |= flag.rawValue
@@ -206,8 +205,7 @@ public class Inotify {
             throw InotifyError.InitError.unknownInitFailure
         }
         callbackQueue = queue
-        // Can't use the nil coalescing operator (??) because it uses a closure that captures self before self is fully initialized
-        self.eventWatcher = eventWatcher == nil ? SelectEventWatcher(fileDescriptor) : eventWatcher!.init(fileDescriptor)
+        self.eventWatcher = eventWatcher.init(fileDescriptor)
     }
 
     /**
@@ -304,6 +302,20 @@ public class Inotify {
         for path in paths {
             try self.watch(path: path, for: events, actionOnEvent: callback)
         }
+    }
+
+    /**
+        Adds a watcher on each the paths for the event
+
+        - Parameters:
+            - paths: The paths to watch
+            - event: The event to watch for
+            - actionOnEvent: The callback to use for when an event is triggered on the paths
+
+        - Throws: failedWatch if inotify_add_watch failed to watch
+    */
+    public func watch(paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+        try self.watch(paths: paths, for: [event], actionOnEvent: callback)
     }
 
     /**

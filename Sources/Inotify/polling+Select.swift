@@ -1,58 +1,13 @@
 import Cselect
 import ErrNo
-import Strand
 
 /// The type used for signals from Glibc (See signal(7))
 public typealias Signal = Int32
 
-// Rather than having 2 separate classes with almost exactly the same code, I
-// decided to just use the SelectEventWatcher and add a few checks to
-// distinguish between the type of select. This class is just so that a PSelect
-// watcher can be default initialized using the type-based initializers in the
-// Inotify class
-public class PSelectEventWatcher: SelectEventWatcher {
-    public required init(_ fileDescriptor: FileDescriptor) {
-        super.init(fileDescriptor)
-        sigmask = UnsafeMutablePointer<sigset_t>.allocate(capacity: 1).pointee
-        sigemptyset(&sigmask!)
-        sigaddset(&sigmask!, SIGIO)
-    }
-
-    /**
-     - Parameters:
-        - timeout: A timespec struct with how long pselect should wait for an event to occur before timing out
-        - killSignals: All of the signals that can be sent to the pselect thread to terminate it early (see signal(7))
-    */
-    public init(timeout: timespec?, killSignals: Signal...) {
-        super.init(timeout: nil)
-        nTimeout = timeout
-        sigmask = UnsafeMutablePointer<sigset_t>.allocate(capacity: 1).pointee
-        sigemptyset(&sigmask!)
-        for signal in killSignals {
-            sigaddset(&sigmask!, signal)
-        }
-    }
-
-
-    /**
-     - Parameters:
-        - timeout: A timespec struct with how long pselect should wait for an event to occur before timing out
-        - killSignal: A single signal that can be sent to the pselect thread to terminate it early (see signal(7))
-    */
-    public convenience init(timeout: timespec?, killSignal: Signal) {
-        self.init(timeout: timeout, killSignals: killSignal)
-    }
-}
-
-public class SelectEventWatcher: InotifyStoppableEventWatcher {
+public class SelectEventWatcher: InotifyEventWatcher {
     public var fileDescriptor: FileDescriptor?
-    public var running: Bool = false
     var fileDescriptorSet: fd_set = fd_set()
     var uTimeout: timeval?
-    var nTimeout: timespec?
-    var sigmask: sigset_t?
-    var pid: pthread_t?
-    var pthread: Strand?
 
     public required init(_ fileDescriptor: FileDescriptor) {
         self.fileDescriptor = fileDescriptor
@@ -71,6 +26,7 @@ public class SelectEventWatcher: InotifyStoppableEventWatcher {
             throw SelectError.noFileDescriptor
         }
 
+        // We need to reset the file descriptor set every time we wait (see signal_tut(2))
         fd_zero(&fileDescriptorSet)
         fd_setter(fd, &fileDescriptorSet)
 
@@ -89,41 +45,14 @@ public class SelectEventWatcher: InotifyStoppableEventWatcher {
         // ^^ This is why we use var t like this here, but after select
         // executes we ignore it and continue as though it never existed
 
-        running = true
         if var t = uTimeout {
             count = select(FD_SETSIZE, &fileDescriptorSet, nil, nil, &t)
-        } else if var t = nTimeout {
-            if var m = sigmask {
-                // Run pselect synchronously on a separate thread when it can
-                // be killed with a signal. This prevents us from killing the
-                // same thread that the rest of Inotify is using
-                pthread = try Strand {
-                    self.pid = pthread_self()
-                    count = pselect(FD_SETSIZE, &self.fileDescriptorSet, nil, nil, &t, &m)
-                }
-                try pthread?.join()
-            } else {
-                count = pselect(FD_SETSIZE, &fileDescriptorSet, nil, nil, &t, nil)
-            }
-        } else if var m = sigmask {
-            // Run pselect synchronously on a separate thread when it can
-            // be killed with a signal. This prevents us from killing the
-            // same thread that the rest of Inotify is using. This QOS is
-            // background since there is no timeout and we could theoretically
-            // be waiting for a very long time
-            pthread = try Strand {
-                self.pid = pthread_self()
-                count = pselect(FD_SETSIZE, &self.fileDescriptorSet, nil, nil, nil, &m)
-            }
-            try pthread?.join()
         } else {
             count = select(FD_SETSIZE, &fileDescriptorSet, nil, nil, nil)
         }
 
         guard count > 0 else {
-            if count == 0 && sigmask == nil {
-                throw SelectError.timeout
-            } else if let error = lastError() {
+            if let error = lastError() {
                 switch error {
                 case EBADF:
                     throw SelectError.invalidFileDescriptor
@@ -141,27 +70,6 @@ public class SelectEventWatcher: InotifyStoppableEventWatcher {
             }
             throw SelectError.unknownSelectFailure
         }
-    }
-
-    public func stop() {
-        // If we aren't running, then we have nothing to kill
-        guard running else { return }
-        // Only pselect with a signal set can be stopped early
-        guard var signalSet = sigmask else { return }
-
-        // Get the thread that pselect is running on so we know where to send the signal
-        guard let thread = pid else { return }
-
-        // Since we don't know which signal is, go through all possible signals
-        // looking for a match and raise the first one we find
-        for signal in 1..<NSIG {
-            if sigismember(&signalSet, signal) == 1 {
-                pthread_kill(thread, signal)
-                break
-            }
-        }
-
-        try? pthread?.cancel()
     }
 }
 

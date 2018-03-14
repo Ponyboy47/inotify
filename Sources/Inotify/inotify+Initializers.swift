@@ -9,7 +9,7 @@ extension Inotify {
 
         - Throws: When the file descriptor returned by inotify_init1(flags) is less than 0
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default) throws {
         try self.init(flag: .none, eventWatcher: eventWatcher, qos: qos)
     }
 
@@ -26,7 +26,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(eventWatcher: eventWatcher, qos: qos)
         try self.watch(paths: paths, for: events, actionOnEvent: callback)
     }
@@ -44,7 +44,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(eventWatcher: eventWatcher, qos: qos, watching: paths, for: [event], actionOnEvent: callback)
     }
 
@@ -61,7 +61,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(eventWatcher: eventWatcher, qos: qos, watching: [path], for: events, actionOnEvent: callback)
     }
 
@@ -78,7 +78,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(eventWatcher: eventWatcher, qos: qos, watching: [path], for: [event], actionOnEvent: callback)
     }
 
@@ -92,7 +92,7 @@ extension Inotify {
 
         - Throws: When the file descriptor returned by inotify_init1() is less than 0
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos)
     }
 
@@ -110,7 +110,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: flags, eventWatcher: eventWatcher, qos: qos)
         try self.watch(paths: paths, for: events, actionOnEvent: callback)
     }
@@ -129,7 +129,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: flags, eventWatcher: eventWatcher, qos: qos, watching: paths, for: [event], actionOnEvent: callback)
     }
 
@@ -147,7 +147,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: flags, eventWatcher: eventWatcher, qos: qos, watching: [path], for: events, actionOnEvent: callback)
     }
 
@@ -165,7 +165,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: flags, eventWatcher: eventWatcher, qos: qos, watching: [path], for: [event], actionOnEvent: callback)
     }
 
@@ -183,7 +183,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos, watching: paths, for: events, actionOnEvent: callback)
     }
 
@@ -201,7 +201,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos, watching: paths, for: [event], actionOnEvent: callback)
     }
 
@@ -219,7 +219,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos, watching: [path], for: events, actionOnEvent: callback)
     }
 
@@ -237,7 +237,7 @@ extension Inotify {
         - Throws: If the inotify_init1() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, qos: DispatchQoS = .default, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, qos: DispatchQoS = .default, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, qos: qos, watching: [path], for: [event], actionOnEvent: callback)
     }
 
@@ -489,7 +489,7 @@ extension Inotify {
 
         - Throws: When the file descriptor returned by inotify_init1(flags) is less than 0
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue) throws {
         try self.init(flag: .none, eventWatcher: eventWatcher, queue: queue)
     }
 
@@ -506,7 +506,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(eventWatcher: eventWatcher, queue: queue)
         try self.watch(paths: paths, for: events, actionOnEvent: callback)
     }
@@ -524,7 +524,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(eventWatcher: eventWatcher, queue: queue, watching: paths, for: [event], actionOnEvent: callback)
     }
 
@@ -541,7 +541,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(eventWatcher: eventWatcher, queue: queue, watching: [path], for: events, actionOnEvent: callback)
     }
 
@@ -558,7 +558,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(eventWatcher: eventWatcher, queue: queue, watching: [path], for: [event], actionOnEvent: callback)
     }
 
@@ -572,7 +572,7 @@ extension Inotify {
 
         - Throws: When the file descriptor returned by inotify_init1() is less than 0
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, queue: queue)
     }
 
@@ -590,7 +590,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: flags, eventWatcher: eventWatcher, queue: queue)
         try self.watch(paths: paths, for: events, actionOnEvent: callback)
     }
@@ -609,7 +609,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: flags, eventWatcher: eventWatcher, queue: queue, watching: paths, for: [event], actionOnEvent: callback)
     }
 
@@ -627,7 +627,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: flags, eventWatcher: eventWatcher, queue: queue, watching: [path], for: events, actionOnEvent: callback)
     }
 
@@ -645,7 +645,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flags: [InotifyFlag], eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: flags, eventWatcher: eventWatcher, queue: queue, watching: [path], for: [event], actionOnEvent: callback)
     }
 
@@ -663,7 +663,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching paths: [FilePath], for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, queue: queue, watching: paths, for: events, actionOnEvent: callback)
     }
 
@@ -681,7 +681,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching paths: [FilePath], for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, queue: queue, watching: paths, for: [event], actionOnEvent: callback)
     }
 
@@ -699,7 +699,7 @@ extension Inotify {
         - Throws: If the inotify_init() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching path: FilePath, for events: [FileSystemEvent], actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, queue: queue, watching: [path], for: events, actionOnEvent: callback)
     }
 
@@ -717,7 +717,7 @@ extension Inotify {
         - Throws: If the inotify_init1() file descriptor is less than 0
         - Throws: If the inotify_add_watch(fd, path, mask) returned a file descriptor less than 0 for one of the paths
     */
-    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type? = nil, queue: DispatchQueue, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
+    public convenience init(flag: InotifyFlag, eventWatcher: InotifyEventWatcher.Type = SelectEventWatcher.self, queue: DispatchQueue, watching path: FilePath, for event: FileSystemEvent, actionOnEvent callback: @escaping InotifyEventAction) throws {
         try self.init(flags: [flag], eventWatcher: eventWatcher, queue: queue, watching: [path], for: [event], actionOnEvent: callback)
     }
 
