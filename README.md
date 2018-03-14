@@ -158,6 +158,8 @@ These links though contain a great amount of information about the differences, 
 - https://www.ulduzsoft.com/2014/01/select-poll-epoll-practical-difference-for-system-architects/
 - https://gist.github.com/beyondwdq/1261042
 - https://jvns.ca/blog/2017/06/03/async-io-on-linux--select--poll--and-epoll/
+- https://stackoverflow.com/questions/17355593/why-is-epoll-faster-than-select
+- http://amsekharkernel.blogspot.com/2013/05/what-is-epoll-epoll-vs-select-call-and.html
 
 ## Known Issues:
 
