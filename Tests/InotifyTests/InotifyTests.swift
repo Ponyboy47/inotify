@@ -12,7 +12,7 @@ class InotifyTests: XCTestCase {
         let dir: FilePath = "\(testDirectory)/\(path)"
         if access(dir, F_OK) != 0 {
             guard mkdir(dir, S_IRWXU | S_IRWXG | S_IRWXO) >= 0 else {
-                XCTFail("Failed to create the directory '\(dir)' with error: \(lastError())")
+                XCTFail("Failed to create the directory '\(dir)' with error: \(ErrNo.lastError)")
                 // The chances of this path already existing are like 0
                 return "\(Foundation.UUID().description)/\(Foundation.UUID().description)"
             }
@@ -49,7 +49,7 @@ class InotifyTests: XCTestCase {
 
         let fd: FileDescriptor = open(filename, O_CREAT | O_WRONLY | O_TRUNC, S_IWUSR | S_IRUSR)
         guard fd >= 0 else {
-            XCTFail("Failed to open the file: \(lastError())")
+            XCTFail("Failed to open the file: \(ErrNo.lastError)")
             return nil
         }
         let writtenBytes = write(fd, UnsafeMutablePointer<CChar>.allocate(capacity: 1), 1)

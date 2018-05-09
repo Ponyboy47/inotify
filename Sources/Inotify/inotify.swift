@@ -75,21 +75,18 @@ public final class Inotify {
         }
         fileDescriptor = inotify_init1(initFlags)
         guard fileDescriptor >= 0 else {
-            if let error = lastError() {
-                switch error {
-                case EINVAL:
-                    throw InotifyError.InitError.invalidInitFlag(initFlags)
-                case EMFILE:
-                    throw InotifyError.InitError.localLimitReached
-                case ENFILE:
-                    throw InotifyError.InitError.systemLimitReached
-                case ENOMEM:
-                    throw InotifyError.InitError.noKernelMemory
-                default:
-                    throw InotifyError.InitError.unknownInitFailure
-                }
+            switch ErrNo.lastError {
+            case EINVAL:
+                throw InotifyError.InitError.invalidInitFlag(initFlags)
+            case EMFILE:
+                throw InotifyError.InitError.localLimitReached
+            case ENFILE:
+                throw InotifyError.InitError.systemLimitReached
+            case ENOMEM:
+                throw InotifyError.InitError.noKernelMemory
+            default:
+                throw InotifyError.InitError.unknownInitFailure
             }
-            throw InotifyError.InitError.unknownInitFailure
         }
         callbackQueue = DispatchQueue(label: "inotify.callback.queue", qos: qos, attributes: [.concurrent])
         self.eventWatcher = eventWatcher
@@ -113,21 +110,18 @@ public final class Inotify {
         }
         fileDescriptor = inotify_init1(initFlags)
         guard fileDescriptor >= 0 else {
-            if let error = lastError() {
-                switch error {
-                case EINVAL:
-                    throw InotifyError.InitError.invalidInitFlag(initFlags)
-                case EMFILE:
-                    throw InotifyError.InitError.localLimitReached
-                case ENFILE:
-                    throw InotifyError.InitError.systemLimitReached
-                case ENOMEM:
-                    throw InotifyError.InitError.noKernelMemory
-                default:
-                    throw InotifyError.InitError.unknownInitFailure
-                }
+            switch ErrNo.lastError {
+            case EINVAL:
+                throw InotifyError.InitError.invalidInitFlag(initFlags)
+            case EMFILE:
+                throw InotifyError.InitError.localLimitReached
+            case ENFILE:
+                throw InotifyError.InitError.systemLimitReached
+            case ENOMEM:
+                throw InotifyError.InitError.noKernelMemory
+            default:
+                throw InotifyError.InitError.unknownInitFailure
             }
-            throw InotifyError.InitError.unknownInitFailure
         }
         callbackQueue = DispatchQueue(label: "inotify.callback.queue", qos: qos, attributes: [.concurrent])
         self.eventWatcher = eventWatcher.init(fileDescriptor)
@@ -150,21 +144,18 @@ public final class Inotify {
         }
         fileDescriptor = inotify_init1(initFlags)
         guard fileDescriptor >= 0 else {
-            if let error = lastError() {
-                switch error {
-                case EINVAL:
-                    throw InotifyError.InitError.invalidInitFlag(initFlags)
-                case EMFILE:
-                    throw InotifyError.InitError.localLimitReached
-                case ENFILE:
-                    throw InotifyError.InitError.systemLimitReached
-                case ENOMEM:
-                    throw InotifyError.InitError.noKernelMemory
-                default:
-                    throw InotifyError.InitError.unknownInitFailure
-                }
+            switch ErrNo.lastError {
+            case EINVAL:
+                throw InotifyError.InitError.invalidInitFlag(initFlags)
+            case EMFILE:
+                throw InotifyError.InitError.localLimitReached
+            case ENFILE:
+                throw InotifyError.InitError.systemLimitReached
+            case ENOMEM:
+                throw InotifyError.InitError.noKernelMemory
+            default:
+                throw InotifyError.InitError.unknownInitFailure
             }
-            throw InotifyError.InitError.unknownInitFailure
         }
         callbackQueue = queue
         self.eventWatcher = eventWatcher
@@ -188,21 +179,18 @@ public final class Inotify {
         }
         fileDescriptor = inotify_init1(initFlags)
         guard fileDescriptor >= 0 else {
-            if let error = lastError() {
-                switch error {
-                case EINVAL:
-                    throw InotifyError.InitError.invalidInitFlag(initFlags)
-                case EMFILE:
-                    throw InotifyError.InitError.localLimitReached
-                case ENFILE:
-                    throw InotifyError.InitError.systemLimitReached
-                case ENOMEM:
-                    throw InotifyError.InitError.noKernelMemory
-                default:
-                    throw InotifyError.InitError.unknownInitFailure
-                }
+            switch ErrNo.lastError {
+            case EINVAL:
+                throw InotifyError.InitError.invalidInitFlag(initFlags)
+            case EMFILE:
+                throw InotifyError.InitError.localLimitReached
+            case ENFILE:
+                throw InotifyError.InitError.systemLimitReached
+            case ENOMEM:
+                throw InotifyError.InitError.noKernelMemory
+            default:
+                throw InotifyError.InitError.unknownInitFailure
             }
-            throw InotifyError.InitError.unknownInitFailure
         }
         callbackQueue = queue
         self.eventWatcher = eventWatcher.init(fileDescriptor)
@@ -236,29 +224,26 @@ public final class Inotify {
         let watchDescriptor = inotify_add_watch(self.fileDescriptor, path, mask)
 
         guard watchDescriptor >= 0 else {
-            if let error = lastError() {
-                switch error {
-                case EACCES:
-                    throw InotifyError.WatchError.noReadAccess(path)
-                case EBADF:
-                    throw InotifyError.WatchError.badFileDescriptor(self.fileDescriptor)
-                case EFAULT:
-                    throw InotifyError.WatchError.pathNotAccessible(path)
-                case EINVAL:
-                    throw InotifyError.WatchError.invalidMask_OR_FileDescriptor(mask, self.fileDescriptor)
-                case ENAMETOOLONG:
-                    throw InotifyError.WatchError.pathTooLong(path)
-                case ENOENT:
-                    throw InotifyError.WatchError.invalidPath(path)
-                case ENOMEM:
-                    throw InotifyError.WatchError.noKernelMemory(path)
-                case ENOSPC:
-                    throw InotifyError.WatchError.limitReached(path)
-                default:
-                    throw InotifyError.WatchError.unknownWatchFailure(path, mask)
-                }
+            switch ErrNo.lastError {
+            case EACCES:
+                throw InotifyError.WatchError.noReadAccess(path)
+            case EBADF:
+                throw InotifyError.WatchError.badFileDescriptor(self.fileDescriptor)
+            case EFAULT:
+                throw InotifyError.WatchError.pathNotAccessible(path)
+            case EINVAL:
+                throw InotifyError.WatchError.invalidMask_OR_FileDescriptor(mask, self.fileDescriptor)
+            case ENAMETOOLONG:
+                throw InotifyError.WatchError.pathTooLong(path)
+            case ENOENT:
+                throw InotifyError.WatchError.invalidPath(path)
+            case ENOMEM:
+                throw InotifyError.WatchError.noKernelMemory(path)
+            case ENOSPC:
+                throw InotifyError.WatchError.limitReached(path)
+            default:
+                throw InotifyError.WatchError.unknownWatchFailure(path, mask)
             }
-            throw InotifyError.WatchError.unknownWatchFailure(path, mask)
         }
 
         // If the event is not an IN_MASK_ADD event and there is another
@@ -337,17 +322,14 @@ public final class Inotify {
         // This really shouldn't ever throw. The only way this throws is if the
         // inotify or watch descriptor is invalid.
         guard inotify_rm_watch(self.fileDescriptor, watcher.descriptor) == 0 else {
-            if let error = lastError() {
-                switch error {
-                case EBADF:
-                    throw InotifyError.UnwatchError.badFileDescriptor(self.fileDescriptor)
-                case EINVAL:
-                    throw InotifyError.UnwatchError.invalidWatch_OR_FileDescriptor(watcher.descriptor, self.fileDescriptor)
-                default:
-                    throw InotifyError.UnwatchError.unknownUnwatchFailure(p)
-                }
+            switch ErrNo.lastError {
+            case EBADF:
+                throw InotifyError.UnwatchError.badFileDescriptor(self.fileDescriptor)
+            case EINVAL:
+                throw InotifyError.UnwatchError.invalidWatch_OR_FileDescriptor(watcher.descriptor, self.fileDescriptor)
+            default:
+                throw InotifyError.UnwatchError.unknownUnwatchFailure(p)
             }
-            throw InotifyError.UnwatchError.unknownUnwatchFailure(p)
         }
         self.watchers.remove(at: index)
     }
@@ -463,29 +445,26 @@ public final class Inotify {
             carryoverBytes = oldBytes
             buffer = buffer.advanced(by: -carryoverBytes)
             guard bytesRead >= 0 else {
-                if let error = lastError() {
-                    switch error {
-                    case EAGAIN:
-                        throw InotifyError.ReadError.nonBlockingDescriptorWouldBeBlocked
-                    case EWOULDBLOCK: // This will generally be the same as EAGAIN, but could possibly change in the future
-                        throw InotifyError.ReadError.nonBlockingDescriptorWouldBeBlocked
-                    case EBADF:
-                        throw InotifyError.ReadError.badFileDescriptor(self.fileDescriptor)
-                    case EFAULT:
-                        throw InotifyError.ReadError.bufferOutsideAccessibleAddressSpace
-                    case EINTR:
-                        throw InotifyError.ReadError.signalInterupt
-                    case EINVAL:
-                        throw InotifyError.ReadError.unsuitableDescriptorForReading(self.fileDescriptor)
-                    case EIO:
-                        throw InotifyError.ReadError.IOError
-                    case EISDIR:
-                        throw InotifyError.ReadError.descriptorIsDirectory(self.fileDescriptor)
-                    default:
-                        throw InotifyError.ReadError.unknownReadError
-                    }
+                switch ErrNo.lastError {
+                case EAGAIN:
+                    throw InotifyError.ReadError.nonBlockingDescriptorWouldBeBlocked
+                case EWOULDBLOCK: // This will generally be the same as EAGAIN, but could possibly change in the future
+                    throw InotifyError.ReadError.nonBlockingDescriptorWouldBeBlocked
+                case EBADF:
+                    throw InotifyError.ReadError.badFileDescriptor(self.fileDescriptor)
+                case EFAULT:
+                    throw InotifyError.ReadError.bufferOutsideAccessibleAddressSpace
+                case EINTR:
+                    throw InotifyError.ReadError.signalInterupt
+                case EINVAL:
+                    throw InotifyError.ReadError.unsuitableDescriptorForReading(self.fileDescriptor)
+                case EIO:
+                    throw InotifyError.ReadError.IOError
+                case EISDIR:
+                    throw InotifyError.ReadError.descriptorIsDirectory(self.fileDescriptor)
+                default:
+                    throw InotifyError.ReadError.unknownReadError
                 }
-                throw InotifyError.ReadError.unknownReadError
             }
 
             guard bytesRead + carryoverBytes >= InotifyEvent.minSize else {

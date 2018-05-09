@@ -52,23 +52,20 @@ public class SelectEventWatcher: InotifyEventWatcher {
         }
 
         guard count > 0 else {
-            if let error = lastError() {
-                switch error {
-                case EBADF:
-                    throw SelectError.invalidFileDescriptor
-                case EINTR:
-                    throw SelectError.caughtSignal
-                case EINVAL:
-                    throw SelectError.badSetSizeLimit_OR_InvalidTimeout
-                case ENOMEM:
-                    throw SelectError.noMemory
-                case 0: // A successful response errno
-                    throw SelectError.timeout
-                default:
-                    throw SelectError.unknownSelectFailure
-                }
+            switch ErrNo.lastError {
+            case EBADF:
+                throw SelectError.invalidFileDescriptor
+            case EINTR:
+                throw SelectError.caughtSignal
+            case EINVAL:
+                throw SelectError.badSetSizeLimit_OR_InvalidTimeout
+            case ENOMEM:
+                throw SelectError.noMemory
+            case 0: // A successful response errno
+                throw SelectError.timeout
+            default:
+                throw SelectError.unknownSelectFailure
             }
-            throw SelectError.unknownSelectFailure
         }
     }
 }

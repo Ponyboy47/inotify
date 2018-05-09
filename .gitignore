@@ -6,7 +6,8 @@
 /Package.pins
 /Package.resolved
 
-# Vim swap files
-.*.sw[po]
+# Vim swap and session files
+*.sw[po]
+*.vimsession
 
 .AppleDouble

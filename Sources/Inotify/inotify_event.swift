@@ -36,7 +36,7 @@ public struct InotifyEvent {
         eventPointer.assign(from: buffer, count: InotifyEvent.minSize)
         // Ensure the event pointer's memory is deallocated after the InotifyEvent object is created
         defer {
-            eventPointer.deallocate(capacity: InotifyEvent.minSize)
+            eventPointer.deallocate()
         }
 
         let _inotify_event = eventPointer.withMemoryRebound(to: inotify_event.self, capacity: 1, { (eventPtr) in
