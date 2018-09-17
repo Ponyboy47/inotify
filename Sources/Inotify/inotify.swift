@@ -446,21 +446,19 @@ public final class Inotify {
             buffer = buffer.advanced(by: -carryoverBytes)
             guard bytesRead >= 0 else {
                 switch ErrNo.lastError {
-                case EAGAIN:
+                case .EAGAIN, .EWOULDBLOCK:
                     throw InotifyError.ReadError.nonBlockingDescriptorWouldBeBlocked
-                case EWOULDBLOCK: // This will generally be the same as EAGAIN, but could possibly change in the future
-                    throw InotifyError.ReadError.nonBlockingDescriptorWouldBeBlocked
-                case EBADF:
+                case .EBADF:
                     throw InotifyError.ReadError.badFileDescriptor(self.fileDescriptor)
-                case EFAULT:
+                case .EFAULT:
                     throw InotifyError.ReadError.bufferOutsideAccessibleAddressSpace
-                case EINTR:
+                case .EINTR:
                     throw InotifyError.ReadError.signalInterupt
-                case EINVAL:
+                case .EINVAL:
                     throw InotifyError.ReadError.unsuitableDescriptorForReading(self.fileDescriptor)
-                case EIO:
+                case .EIO:
                     throw InotifyError.ReadError.IOError
-                case EISDIR:
+                case .EISDIR:
                     throw InotifyError.ReadError.descriptorIsDirectory(self.fileDescriptor)
                 default:
                     throw InotifyError.ReadError.unknownReadError
