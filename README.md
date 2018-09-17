@@ -1,5 +1,5 @@
 # Inotify
-![Version](https://img.shields.io/badge/inotify-v0.4.2-blue.svg) [![Build Status](https://travis-ci.org/Ponyboy47/inotify.svg?branch=master)](https://travis-ci.org/Ponyboy47/inotify) ![Platforms](https://img.shields.io/badge/platform-linux-lightgrey.svg) ![Swift Version](https://img.shields.io/badge/swift%20version-4.0-orange.svg)
+![Version](https://img.shields.io/badge/inotify-v0.5.1-blue.svg) [![Build Status](https://travis-ci.org/Ponyboy47/inotify.svg?branch=master)](https://travis-ci.org/Ponyboy47/inotify) ![Platforms](https://img.shields.io/badge/platform-linux-lightgrey.svg) ![Swift Version](https://img.shields.io/badge/swift%20version-4.2-orange.svg)
 
 A swifty wrapper around Linux's inotify API. Trying to make using inotify in Swift as easy as possible.
 
@@ -19,10 +19,10 @@ Annoyed with the lack of FileSystemEvent notifications in Swift on Linux that ar
 ## Usage:
 Add this to your Package.swift:
 ```swift
-.package(url: "https://github.com/Ponyboy47/inotify.git", from: "0.4.2")
+.package(url: "https://github.com/Ponyboy47/inotify.git", from: "0.5.0")
 ```
 
-NOTE: The current version of Inotify (0.4.2) uses Swift 4.2. For Swift 3, use version 0.3.x
+NOTE: The current version of Inotify (0.5.0) uses Swift 4.2. For Swift 3, use version 0.3.x
 
 Use it like this:
 ```swift
