@@ -312,26 +312,11 @@ public final class Inotify {
         - Throws: failedUnwatch when inotify_rm_watch(fd, wd) fails (Only happens if the file or watch descriptor is invalid, which this library should prevent from happening)
     */
     public func unwatch(path p: FilePath) throws {
-        guard let index = self.watchers.index(where: { (watcher) in
-            return watcher.path == p
-        }) else {
+        guard let index = self.watchers.index(where: { $0.path == p }) else {
             throw InotifyError.UnwatchError.unwatchPathNotFound(p)
         }
 
-        let watcher = self.watchers[index]
-        // This really shouldn't ever throw. The only way this throws is if the
-        // inotify or watch descriptor is invalid.
-        guard inotify_rm_watch(self.fileDescriptor, watcher.descriptor) == 0 else {
-            switch ErrNo.lastError {
-            case EBADF:
-                throw InotifyError.UnwatchError.badFileDescriptor(self.fileDescriptor)
-            case EINVAL:
-                throw InotifyError.UnwatchError.invalidWatch_OR_FileDescriptor(watcher.descriptor, self.fileDescriptor)
-            default:
-                throw InotifyError.UnwatchError.unknownUnwatchFailure(p)
-            }
-        }
-        self.watchers.remove(at: index)
+        try self.unwatch(watcherIndex: index)
     }
 
     /**
@@ -345,6 +330,41 @@ public final class Inotify {
     public func unwatch(paths: [FilePath]) throws {
         for path in paths {
             try self.unwatch(path: path)
+        }
+    }
+
+    /**
+        Stops watching for filesystem events for the watcher at the speficied index
+
+        - Parameter index: The index of the watcher to stop watching
+
+        - Throws: failedUnwatch when inotify_rm_watch(fd, wd) fails (Only happens if the file or watch descriptor is invalid, which this library should prevent from happening)
+    */
+    private func unwatch(watcherIndex index: Array<Watcher>.Index) throws {
+        let watcher = self.watchers[index]
+        // This really shouldn't ever throw. The only way this throws is if the
+        // inotify or watch descriptor is invalid.
+        guard inotify_rm_watch(self.fileDescriptor, watcher.descriptor) == 0 else {
+            switch ErrNo.lastError {
+            case EBADF:
+                throw InotifyError.UnwatchError.badFileDescriptor(self.fileDescriptor)
+            case EINVAL:
+                throw InotifyError.UnwatchError.invalidWatch_OR_FileDescriptor(watcher.descriptor, self.fileDescriptor)
+            default:
+                throw InotifyError.UnwatchError.unknownUnwatchFailure(watcher.path)
+            }
+        }
+        self.watchers.remove(at: index)
+    }
+
+    /**
+        Stops watching for filesystem events at all of the currently watched paths
+
+        - Throws: failedUnwatch when inotify_rm_watch(fd, wd) fails (Only happens if the file or watch descriptor is invalid, which this library should prevent from happening)
+    */
+    public func unwatchAll() throws {
+        while !self.watchers.isEmpty {
+            try self.unwatch(watcherIndex: self.watchers.startIndex)
         }
     }
 
