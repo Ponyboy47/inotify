@@ -516,6 +516,7 @@ public final class Inotify {
 
     // Make sure the inotify file descriptor is properly closed when we're done with it
     deinit {
+        try? self.unwatchAll()
         close(self.fileDescriptor)
     }
 }
