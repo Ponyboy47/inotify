@@ -4,5 +4,4 @@ import XCTest
 XCTMain([
     testCase(InotifyInitTests.allTests),
     testCase(InotifySelectTests.allTests),
-    testCase(InotifyManualWaitTests.allTests),
 ])
