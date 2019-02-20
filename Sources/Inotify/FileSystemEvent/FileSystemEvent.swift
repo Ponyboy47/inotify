@@ -44,3 +44,48 @@ public struct FileSystemEvent: OptionSet, ExpressibleByIntegerLiteral {
         self.init(rawValue: value)
     }
 }
+
+extension FileSystemEvent: CustomStringConvertible {
+    public var description: String {
+        var events: [String] = []
+
+        if contains(.access) {
+            events.append("access")
+        }
+        if contains(.attribute) {
+            events.append("attribute")
+        }
+        if contains(.closeWrite) {
+            events.append("closeWrite")
+        }
+        if contains(.closeNoWrite) {
+            events.append("closeNoWrite")
+        }
+        if contains(.delete) {
+            events.append("delete")
+        }
+        if contains(.modify) {
+            events.append("modify")
+        }
+        if contains(.move) {
+            events.append("move")
+        }
+        if contains(.open) {
+            events.append("open")
+        }
+        if contains(DirectoryEvent.create) {
+            events.append("create")
+        }
+        if contains(DirectoryEvent.delete) {
+            events.append("deletedFrom")
+        }
+        if contains(DirectoryEvent.movedFrom) {
+            events.append("movedFrom")
+        }
+        if contains(DirectoryEvent.movedTo) {
+            events.append("movedTo")
+        }
+
+        return "FileSystemEvent(event\(events.count != 1 ? "s" : ""): \(events.isEmpty ? "none" : events.joined(separator: ", ")))"
+    }
+}
