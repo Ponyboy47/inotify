@@ -1,5 +1,5 @@
 # Inotify
-![Version](https://img.shields.io/badge/inotify-v0.5.3-blue.svg) [![Build Status](https://travis-ci.org/Ponyboy47/inotify.svg?branch=master)](https://travis-ci.org/Ponyboy47/inotify) ![Platforms](https://img.shields.io/badge/platform-linux-lightgrey.svg) ![Swift Version](https://img.shields.io/badge/swift%20version-4.2-orange.svg)
+![Version](https://img.shields.io/badge/inotify-v1.0.0-blue.svg) [![Build Status](https://travis-ci.org/Ponyboy47/inotify.svg?branch=master)](https://travis-ci.org/Ponyboy47/inotify) ![Platforms](https://img.shields.io/badge/platform-linux-lightgrey.svg) ![Swift Version](https://img.shields.io/badge/swift%20version-4.2.2-orange.svg)
 
 A swifty wrapper around Linux's inotify API. Trying to make using inotify in Swift as easy as possible.
 
@@ -7,160 +7,103 @@ Annoyed with the lack of FileSystemEvent notifications in Swift on Linux that ar
 
 ## Features:
 - Easily add and remove paths to watch for specific events
-    - Includes an easy to use enum for all of inotify's supported filesystem events
 - Easily start and stop watching for events
-    - Two available methods of waiting for events (select(2) and manual polling)
-- Supports custom DispatchQueues for both the monitoring and executing
-- Easily execute callbacks when an event is triggered
-- Everything is done asynchronously
+  - Built using the common select(2) APIs
+  - Custom watchers can be built by extending the `EventPoller` protocol
+    - Ready for epoll(2) or poll(2) implementations
+- Wait for a single event to be triggered synchronously or wait continuously asynchronously
+  - Continuous waiting can be stopped at any time
+- Supports custom DispatchQueue/QoS while waiting indefinitely for events to be triggered
 - InotifyEvent wraps the inotify_event struct to allow access to the optional name string (not normally available in the C to Swift interop)
 - Handy error handling using the errno to give more descriptive errors when something goes wrong
 
 ## Installation (SPM):
 Add this to your Package.swift:
 ```swift
-.package(url: "https://github.com/Ponyboy47/inotify.git", from: "0.5.3")
+.package(url: "https://github.com/Ponyboy47/inotify.git", from: "1.0.0")
 ```
 
-NOTE: The current version of Inotify (0.5.3) uses Swift 4.2. For Swift 3, use version 0.3.x
+NOTE: The current version of Inotify (1.0.0) uses Swift 4.2.2. For Swift 3, use version 0.3.x
 
 ## Usage:
 
-### Creating and watching paths for events
+### InotifyEventDelegate
+The `InotifyEventDelegate` protocol designates a class that will react when an inotify event is triggered.
+```swift
+public protocol InotifyEventDelegate: class {
+    func respond(to event: InotifyEvent)
+}
+```
+You will need some type that conforms to the InotifyEventDelegate in order to use Inotify.
+
+#### Example:
+```swift
+import Inotify
+
+public final class EventDelegate: InotifyEventDelegate {
+    let name: String
+
+    public init(name: String) {
+        self.name = name
+    }
+
+    public func respond(to event: InotifyEvent) {
+        print("\(event.events) events were triggered")
+        print("Hello \(name)")
+    }
+}
+```
+
+### Inotify
+The `Inotify` class seamlessly interacts with inotify(2) C APIs to provide swifty high level filesystem event notification interactions.
+
+#### Example:
 ```swift
 import Inotify
 
 do {
+    // Initializes an inotify instance without any flags
     let inotify = try Inotify()
 
-    try inotify.watch(path: "/tmp", for: .allEvents) { event in
-        let mask = FileSystemEvent(rawValue: event.mask)
-        print("A(n) \(mask) event was triggered!")
-        if let name = event.name {
-            // This should only be present when the event was triggered on a
-            // file in the watched directory, and not on the directory itself.
-            print("The filename for the event is '\(name)'.")
-        }
-    }
+    // Watch /tmp for files/directories being created, ensuring that /tmp is a
+    // directory. Notify the EventDelegate when the event is triggered
+    try inotify.watch(path: "/tmp", for: [DirectoryEvent.create], with: [.onlyDirectory], notify: EventDelegate(name: "Ponyboy47"))
 
+    // Synchronously wait for a single event to be triggered
+    try inotify.wait()
+
+    // Asynchronously wait for events to be triggered continuously
     inotify.start()
+
+    // Stop waiting for events to be triggered asynchronously
+    inotify.stop()
+
+    // No longer watch the specified path for events
+    try inotify.unwatch(path: "/tmp")
 } catch InotifyError.InitError {
-    print("Error initializing the inotify object: \(error)")
-} catch InotifyError.WatchError {
-    print("Error adding watcher to the inotify object: \(error)")
+    print("Error initializing the inotify instance: \(error)")
+} catch InotifyError.AddWatchError {
+    print("Error adding the watcher: \(error)")
+} catch InotifyError.UnwatchError {
+    print("Error unwatching path: \(error)")
+} catch {
+    print("Error while waiting for/reading event: \(error)")
 }
 ```
-
-Using a different polling implementation:
-```swift
-import Inotify
-
-do {
-    let inotify = try Inotify(eventWatcherType: ManualWaitEventWatcher.self)
-
-    try inotify.watch(path: "/tmp", for: .allEvents) { event in
-        let mask = FileSystemEvent(rawValue: event.mask)
-        print("A(n) \(mask) event was triggered!")
-        if let name = event.name {
-            // This should only be present when the event was triggered on a
-            // file in the watched directory, and not on the directory itself.
-            print("The filename for the event is '\(name)'.")
-        }
-    }
-
-    inotify.start()
-} catch InotifyError.InitError {
-    print("Error initializing the inotify object: \(error)")
-} catch InotifyError.WatchError {
-    print("Error adding watcher to the inotify object: \(error)")
-}
-```
-
-or
-
-```swift
-import Inotify
-
-do {
-    let watcher = ManualWaitEventWatcher()
-    let inotify = try Inotify(eventWatcher: watcher)
-
-    try inotify.watch(path: "/tmp", for: .allEvents) { event in
-        let mask = FileSystemEvent(rawValue: event.mask)
-        print("A(n) \(mask) event was triggered!")
-        if let name = event.name {
-            // This should only be present when the event was triggered on a
-            // file in the watched directory, and not on the directory itself.
-            print("The filename for the event is '\(name)'.")
-        }
-    }
-
-    inotify.start()
-} catch InotifyError.InitError {
-    print("Error initializing the inotify object: \(error)")
-} catch InotifyError.WatchError {
-    print("Error adding watcher to the inotify object: \(error)")
-}
-```
-^^ This can also be used to override default variables for the select or manual wait watchers:
-```swift
-import Inotify
-
-do {
-    // either
-    let watcher = ManualWaitEventWatcher(delay: 0.5)
-    // or
-    let timeout: timeval = timeval(tv_sec: 1, tv_usec: 0)
-    let watcher = SelectEventWatcher(timeout: timeout)
-
-    let inotify = try Inotify(eventWatcher: watcher)
-
-    try inotify.watch(path: "/tmp", for: .allEvents) { event in
-        let mask = FileSystemEvent(rawValue: event.mask)
-        print("A(n) \(mask) event was triggered!")
-        if let name = event.name {
-            // This should only be present when the event was triggered on a
-            // file in the watched directory, and not on the directory itself.
-            print("The filename for the event is '\(name)'.")
-        }
-    }
-
-    inotify.start()
-} catch InotifyError.InitError {
-    print("Error initializing the inotify object: \(error)")
-} catch InotifyError.WatchError {
-    print("Error adding watcher to the inotify object: \(error)")
-}
-```
-
-### Stop watching paths:
-```swift
-try inotify.unwatch(path: "/tmp")
-
-try inotify.unwatchAll()
-```
-More examples to come later...
 
 ## Creating custom watchers:
-It is possible to write your own watcher that will block a thread until a file descriptor is ready for reading. By default, I've provided one using the C select API's and I plan on adding more later. (See the Todo for the others I plan on adding and feel free to help me out by making them yourself and submitting a pull request)
-
-There are 2 Protocols to choose from when implementing a watcher:
-- InotifyEventWatcher
-- InotifyStoppableEventWatcher
-
-The only difference, is that the Stoppable watcher can be force stopped while it is blocking a thread (ie: receive a signal to be interrupted and stop gracefully, like epoll)
+It is possible to write your own watcher that will block a thread until a file descriptor is ready for reading. By default, I've provided one using the C select(2) API's and I will add others later if requested. (See the Todo for the others I plan on adding and feel free to help me out by making them yourself and submitting a pull request)
 
 A watcher just needs to monitor the inotify file descriptor and block a thread. Once the file descriptor is prepared to be read from, unblock the thread and the Inotify class object will handle the actual reading of the file descriptor and subsequent creating of the InotifyEvents and executing of the callbacks.
 
-You can look at polling+Select.swift to see how I implemented the select-based watcher. It may be helpful to read the select man pages (or other documentation) in order to more fully understand what it does in the backend.
+You can look at EventWatcher.swift to see how I implemented the select-based watcher. It may be helpful to read the select man pages (or other documentation) in order to more fully understand what it does in the backend.
 
 ## Which watcher is best?
 
 This really depends on what you plan on doing with it and what kinds of capabilities you need for your project.
 
-The manual poller is probably not ever going to be your first choice because it's horribly inneficient and I mostly just made it for completion sake and so in the simplest of instances you always have something that will work.<br>
-I implemented the select-based watcher first because I've used select for inotify monitoring before and was already familiar with how to use it.<br>
-I'm not really familiar with poll, epoll, or pselect since I've never used them. 
+I implemented the select-based watcher because I've used select for inotify monitoring before and was already familiar with how to use it.<br>
+I'm not really familiar with poll or epoll since I've never used them, but if there is a demand for non-select watchers then I will familiarize myself with the man pages and implement them myself.
 
 These links though contain a great amount of information about the differences, shortcomings, and strengths of select, poll, and epoll and may be handy when deciding on which watcher you would like to use:
 - https://www.ulduzsoft.com/2014/01/select-poll-epoll-practical-difference-for-system-architects/
@@ -170,27 +113,20 @@ These links though contain a great amount of information about the differences, 
 - http://amsekharkernel.blogspot.com/2013/05/what-is-epoll-epoll-vs-select-call-and.html
 
 ## Known Issues:
+None, but file an issue if you come across any :)
 
 ## Todo:
-- [x] Init with inotify_init1 for flags
-- [x] Useful errors with ErrNo
 - [x] Asynchronous monitoring
-- [ ] Synchronous monitoring
-- [ ] Better error propogation in the asynchronous monitors
-- [x] Update to Swift 4
+- [x] Synchronous monitoring
+- [ ] Error propogation in the asynchronous monitors
 - [ ] Support various watcher implementations
-  - [x] manual polling
   - [x] select
-  - [ ] pselect // Maybe not
   - [ ] poll
   - [ ] epoll
 - [ ] Write tests for the watchers
-  - [x] manual polling
   - [x] select
-  - [ ] pselect
   - [ ] poll
   - [ ] epoll
 - [x] Make watchers more modular (so that others could easily write their own custom ones)
-- [x] Auto-stop the watcher if there are no more paths to watch (occurs when all paths were one-shot events and they've all been triggered already)
-- [ ] Handle inotify event cookie values
+- [ ] Handle inotify event cookie values (see inotify(7))
 - [ ] Automatically set up recursive watchers (Since by default inotify only monitors one directory deep)
