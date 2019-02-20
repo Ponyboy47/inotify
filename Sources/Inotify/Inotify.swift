@@ -119,6 +119,13 @@ public final class Inotify {
         try watchers.remove(at: index).unwatch(fd: fileDescriptor)
     }
 
+    public func unwatch(path: String) throws {
+        guard let index = watchers.firstIndex(where: { $0.path == GenericPath(path) }) else {
+            throw InotifyError.UnwatchError.noWatcherWithPath(path)
+        }
+        try watchers.remove(at: index).unwatch(fd: fileDescriptor)
+    }
+
     public func unwatch(watcherID: InotifyWatcherID) throws {
         guard let index = watchers.firstIndex(where: { $0.id == watcherID }) else {
             throw InotifyError.UnwatchError.noWatcherWithIdentifier(watcherID)
