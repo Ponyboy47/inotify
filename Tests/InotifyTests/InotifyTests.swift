@@ -2,7 +2,9 @@ import XCTest
 import Dispatch
 import Glibc
 import ErrNo
-@testable import Inotify
+
+typealias FileDescriptor = Int32
+typealias FilePath = String
 
 class InotifyTests: XCTestCase {
     let testQueue = DispatchQueue(label: "inotify.test.queue", qos: .utility)
