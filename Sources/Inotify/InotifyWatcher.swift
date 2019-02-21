@@ -2,8 +2,8 @@ import protocol TrailBlazer.Path
 import struct TrailBlazer.GenericPath
 import func Cinotify.inotify_add_watch
 import func Cinotify.inotify_rm_watch
-import class Foundation.DispatchQueue
-import struct Foundation.DispatchQoS
+import class Dispatch.DispatchQueue
+import struct Dispatch.DispatchQoS
 
 public protocol InotifyEventDelegate: class {
     var queue: DispatchQueue { get }
