@@ -4,9 +4,9 @@ import protocol TrailBlazer.Path
 import struct TrailBlazer.GenericPath
 import func Glibc.close
 import func Glibc.read
-import class Foundation.DispatchQueue
-import struct Foundation.DispatchQoS
-import class Foundation.DispatchWorkItem
+import class Dispatch.DispatchQueue
+import struct Dispatch.DispatchQoS
+import class Dispatch.DispatchWorkItem
 
 public final class Inotify {
     public let fileDescriptor: FileDescriptor
@@ -140,16 +140,20 @@ public final class Inotify {
         try _watcher.unwatch(fd: fileDescriptor)
     }
 
-    public func start(on queue: DispatchQueue? = nil, qos: DispatchQoS = .utility, using poller: EventPoller.Type = SelectPoller.self) {
+    public func start(on queue: DispatchQueue, using poller: EventPoller.Type = SelectPoller.self) {
         guard _work == nil else { return }
 
-        _work = DispatchWorkItem(qos: qos) {
+        _work = DispatchWorkItem(qos: .utility) {
             while true {
                 try? self.wait(using: poller)
             }
         }
 
-        (queue ?? DispatchQueue.global(qos: qos.qosClass)).async(execute: _work!)
+        queue.async(execute: _work!)
+    }
+
+    public func start(qos: DispatchQoS = .utility, using poller: EventPoller.Type = SelectPoller.self) {
+        start(on: .global(qos: qos.qosClass), using: poller)
     }
 
     public func stop() {
