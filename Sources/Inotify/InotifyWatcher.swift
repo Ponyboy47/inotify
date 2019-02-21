@@ -2,9 +2,18 @@ import protocol TrailBlazer.Path
 import struct TrailBlazer.GenericPath
 import func Cinotify.inotify_add_watch
 import func Cinotify.inotify_rm_watch
+import class Foundation.DispatchQueue
+import struct Foundation.DispatchQoS
 
 public protocol InotifyEventDelegate: class {
+    var queue: DispatchQueue { get }
+    var qos: DispatchQoS { get }
     func respond(to event: InotifyEvent)
+}
+
+extension InotifyEventDelegate {
+    public var queue: DispatchQueue { return .global(qos: qos.qosClass) }
+    public var qos: DispatchQoS { return .utility }
 }
 
 public final class InotifyWatcherID: Hashable, CustomStringConvertible {
@@ -93,7 +102,9 @@ public struct InotifyWatcher {
     }
 
     func trigger(with event: InotifyEvent) {
-        delegates.forEach({ $0.respond(to: event) })
+        for delegate in delegates {
+            delegate.queue.async { delegate.respond(to: event) }
+        }
     }
 }
 
