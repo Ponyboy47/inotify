@@ -6,32 +6,34 @@ when reading the mask of a generated event
 */
 public struct ReadEventMask: OptionSet, ExpressibleByIntegerLiteral {
     public typealias IntegerLiteralType = InotifyWatcherFlagsMask
-    public let rawValue: IntegerLiteralType
+    public typealias RawValue = InotifyFlagsMask
 
-    static let all: IntegerLiteralType = IntegerLiteralType(IN_IGNORED | IN_ISDIR | IN_Q_OVERFLOW | IN_UNMOUNT)
+    public let rawValue: RawValue
+
+    static let all: RawValue = RawValue(IN_IGNORED | IN_ISDIR | IN_Q_OVERFLOW | IN_UNMOUNT)
 
     /**
     Watch was removed explicitly (inotify_rm_watch(2)) or automatically
     (file was deleted, or filesystem was unmounted).
     */
-    public static let ignored = ReadEventMask(integerLiteral: IntegerLiteralType(IN_IGNORED))
+    public static let ignored = ReadEventMask(integerLiteral: IN_IGNORED)
     /// Subject of this event is a directory.
-    public static let isDirectory = ReadEventMask(integerLiteral: IntegerLiteralType(IN_ISDIR))
+    public static let isDirectory = ReadEventMask(integerLiteral: IN_ISDIR)
     /// Event queue overflowed (wd is -1 for this event).
-    public static let queueOverflow = ReadEventMask(integerLiteral: IntegerLiteralType(IN_Q_OVERFLOW))
+    public static let queueOverflow = ReadEventMask(integerLiteral: IN_Q_OVERFLOW)
     /**
     Filesystem containing watched object was unmounted. In addition, an
     IN_IGNORED event will subsequently be generated for the watch
     descriptor.
     */
-    public static let unmount = ReadEventMask(integerLiteral: IntegerLiteralType(IN_UNMOUNT))
+    public static let unmount = ReadEventMask(integerLiteral: IN_UNMOUNT)
 
-    public init(rawValue: IntegerLiteralType) {
+    public init(rawValue: RawValue) {
         self.rawValue = rawValue & ReadEventMask.all
     }
 
     public init(integerLiteral value: IntegerLiteralType) {
-        self.init(rawValue: value)
+        self.init(rawValue: RawValue(value))
     }
 }
 
