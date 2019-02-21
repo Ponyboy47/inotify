@@ -6,12 +6,14 @@ FileSystemEvents, but are options that change the behavior of the watch
 */
 public struct AddWatchMask: OptionSet, ExpressibleByIntegerLiteral {
     public typealias IntegerLiteralType = InotifyWatcherFlagsMask
-    public let rawValue: IntegerLiteralType
+    public typealias RawValue = InotifyFlagsMask
 
-    private static let all: IntegerLiteralType = IntegerLiteralType(IN_DONT_FOLLOW | IN_EXCL_UNLINK | IN_MASK_ADD | IN_ONLYDIR) | IN_ONESHOT
+    public let rawValue: RawValue
+
+    private static let all: RawValue = RawValue(IN_DONT_FOLLOW | IN_EXCL_UNLINK | IN_MASK_ADD | IN_ONLYDIR) | IN_ONESHOT
 
     /// Don't dereference pathname if it is a symbolic link.
-    public static let dontFollow = AddWatchMask(integerLiteral: IntegerLiteralType(IN_DONT_FOLLOW))
+    public static let dontFollow = AddWatchMask(integerLiteral: IN_DONT_FOLLOW)
     /**
     By default, when watching events on the children of a directory, events
     are generated for children even after they have been unlinked from the
@@ -22,31 +24,31 @@ public struct AddWatchMask: OptionSet, ExpressibleByIntegerLiteral {
     default behavior, so that events are not generated for children after
     they have been unlinked from the watched directory.
     */
-    public static let excludeUnlink = AddWatchMask(integerLiteral: IntegerLiteralType(IN_EXCL_UNLINK))
+    public static let excludeUnlink = AddWatchMask(integerLiteral: IN_EXCL_UNLINK)
     /**
     If a watch instance already exists for the filesystem object
     corresponding to pathname, add (OR) the events in mask to the watch
     mask (instead of replacing the mask).
     */
-    public static let add = AddWatchMask(integerLiteral: IntegerLiteralType(IN_MASK_ADD))
+    public static let add = AddWatchMask(integerLiteral: IN_MASK_ADD)
     /**
     Monitor the filesystem object corresponding to pathname for one event,
     then remove from watch list.
     */
-    public static let oneShot = AddWatchMask(integerLiteral: IN_ONESHOT)
+    public static let oneShot = AddWatchMask(rawValue: IN_ONESHOT)
     /**
     Watch pathname only if it is a directory. Using this flag provides an
     application with a race-free way of ensuring that the monitored object
     is a directory.
     */
-    public static let onlyDirectory = AddWatchMask(integerLiteral: IntegerLiteralType(IN_ONLYDIR))
+    public static let onlyDirectory = AddWatchMask(integerLiteral: IN_ONLYDIR)
 
-    public init(rawValue: IntegerLiteralType) {
+    public init(rawValue: RawValue) {
         self.rawValue = rawValue & AddWatchMask.all
     }
 
     public init(integerLiteral value: IntegerLiteralType) {
-        self.init(rawValue: value)
+        self.init(rawValue: RawValue(value))
     }
 }
 

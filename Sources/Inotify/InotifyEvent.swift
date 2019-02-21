@@ -15,7 +15,7 @@ import let Cinotify.NAME_MAX
 @_fixed_layout
 public struct InotifyEvent {
     let wd: WatchDescriptor
-    private let mask: InotifyWatcherFlagsMask
+    private let mask: InotifyFlagsMask
     public let cookie: InotifyCookie
     public let events: FileSystemEvent
     public let masks: ReadEventMask
