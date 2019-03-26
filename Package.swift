@@ -1,4 +1,4 @@
-// swift-tools-version:4.2
+// swift-tools-version:5.0
 
 import PackageDescription
 
@@ -12,8 +12,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/Ponyboy47/Cinotify.git", from: "3.0.0"),
         .package(url: "https://github.com/Ponyboy47/Cselect.git", from: "2.0.0"),
-        .package(url: "https://github.com/Ponyboy47/ErrNo.git", from: "0.4.2"),
-        .package(url: "https://github.com/Ponyboy47/TrailBlazer.git", from: "0.14.1"),
+        .package(url: "https://github.com/Ponyboy47/ErrNo.git", from: "0.5.1"),
+        .package(url: "https://github.com/Ponyboy47/TrailBlazer.git", from: "0.15.0"),
     ],
     targets: [
         .target(

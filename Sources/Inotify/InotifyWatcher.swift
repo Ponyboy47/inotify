@@ -17,16 +17,17 @@ extension InotifyEventDelegate {
 }
 
 public final class InotifyWatcherID: Hashable, CustomStringConvertible {
-    public let hashValue: Int
     public let description: String
+    private let hasher: Hasher
+    public func hash(into hasher: inout Hasher) {
+        hasher = self.hasher
+    }
 
     fileprivate init<PathType: Path>(using path: PathType, with watchDescriptor: WatchDescriptor) {
         var hasher = Hasher()
-
         hasher.combine(watchDescriptor)
         hasher.combine(path)
-
-        hashValue = hasher.finalize()
+        self.hasher = hasher
 
         description = "InotifyWatcherID(wd: \(watchDescriptor), path: \(path.string))"
     }
