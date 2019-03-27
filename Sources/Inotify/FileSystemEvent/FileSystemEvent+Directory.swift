@@ -8,9 +8,9 @@ public struct DirectoryEvent {
     static let all: RawValue = RawValue(IN_CREATE | IN_DELETE | IN_MOVE)
 
     /**
-    File/directory created in watched directory (e.g., open(2) O_CREAT,
-    mkdir(2), link(2), symlink(2), bind(2) on a UNIX domain socket).
-    */
+     File/directory created in watched directory (e.g., open(2) O_CREAT,
+     mkdir(2), link(2), symlink(2), bind(2) on a UNIX domain socket).
+     */
     public static let create = FileSystemEvent(integerLiteral: IN_CREATE)
     /// File/directory deleted from watched directory.
     public static let delete = FileSystemEvent(integerLiteral: IN_DELETE)

@@ -1,9 +1,9 @@
 import func Glibc.read
 
 /**
-A buffer type that reuses an allocated pointed in a circular fashion and
-prevents overwriting from memory that has not been read from
-*/
+ A buffer type that reuses an allocated pointed in a circular fashion and
+ prevents overwriting from memory that has not been read from
+ */
 struct ReadableRingBuffer {
     private var buffer: UnsafeMutablePointer<CChar>
     private var readPosition: Int = 0
@@ -15,14 +15,16 @@ struct ReadableRingBuffer {
 
         return (size - writePosition) + readPosition
     }
+
     private var availableMemory: Int {
         return size - unread
     }
+
     private let size: Int
 
     init(size: Int) {
         self.size = size
-        self.buffer = .allocate(capacity: size)
+        buffer = .allocate(capacity: size)
     }
 
     @discardableResult

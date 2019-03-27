@@ -2,16 +2,16 @@ import struct Cinotify.inotify_event
 import let Cinotify.NAME_MAX
 
 /**
-    This struct is so that we can actually get event names from the struct. Based off the spec that the inotify_event struct is:
+ This struct is so that we can actually get event names from the struct. Based off the spec that the inotify_event struct is:
 
-    struct inotify_event {
-        int      wd;        /* Watch descriptor */
-        uint32_t mask;      /* Mask describing event */
-        uint32_t cookie;    /* Unique cookie associating related events (for rename(2)) */
-        uint32_t len;       /* Size of name field */
-        char     name[];    /* Optional null-terminated name */
-    }
-*/
+ struct inotify_event {
+     int      wd;        /* Watch descriptor */
+     uint32_t mask;      /* Mask describing event */
+     uint32_t cookie;    /* Unique cookie associating related events (for rename(2)) */
+     uint32_t len;       /* Size of name field */
+     char     name[];    /* Optional null-terminated name */
+ }
+ */
 @_fixed_layout
 public struct InotifyEvent {
     let wd: WatchDescriptor
@@ -19,7 +19,7 @@ public struct InotifyEvent {
     public let cookie: InotifyCookie
     public let events: FileSystemEvent
     public let masks: ReadEventMask
-    public private(set) var name: String? = nil
+    public private(set) var name: String?
     let size: Int
 
     /// The mininum bytesize of an inotify_event struct
@@ -37,7 +37,7 @@ public struct InotifyEvent {
             eventPointer.deallocate()
         }
 
-        let _inotify_event = eventPointer.withMemoryRebound(to: inotify_event.self, capacity: 1, { $0.pointee })
+        let _inotify_event = eventPointer.withMemoryRebound(to: inotify_event.self, capacity: 1) { $0.pointee }
 
         self.wd = _inotify_event.wd
         self.mask = _inotify_event.mask

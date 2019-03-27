@@ -71,9 +71,9 @@ public enum InotifyError: Error {
 
 public enum SelectError: Error {
     /**
-    An invalid file descriptor was given in one of the sets. (Perhaps a file
-    descriptor that was already closed, or one on which an error has occurred.)
-    */
+     An invalid file descriptor was given in one of the sets. (Perhaps a file
+     descriptor that was already closed, or one on which an error has occurred.)
+     */
     case invalidFileDescriptor
     /// A signal was caught; see signal(7)
     case caughtSignal
@@ -84,9 +84,9 @@ public enum SelectError: Error {
     /// The select timeout ocurred before an event was triggered
     case timeout
     /**
-    Did not receive a valid filde descriptor and we were unable to identify why
-    using the errno
-    */
+     Did not receive a valid filde descriptor and we were unable to identify why
+     using the errno
+     */
     case unknown
 
     public init() {

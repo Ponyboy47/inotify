@@ -1,11 +1,11 @@
-import protocol TrailBlazer.Path
-import struct TrailBlazer.GenericPath
 import func Cinotify.inotify_add_watch
 import func Cinotify.inotify_rm_watch
-import class Dispatch.DispatchQueue
 import struct Dispatch.DispatchQoS
+import class Dispatch.DispatchQueue
+import struct TrailBlazer.GenericPath
+import protocol TrailBlazer.Path
 
-public protocol InotifyEventDelegate: class {
+public protocol InotifyEventDelegate: AnyObject {
     var queue: DispatchQueue { get }
     var qos: DispatchQoS { get }
     func respond(to event: InotifyEvent)
@@ -47,11 +47,11 @@ public struct InotifyWatcher {
     private var delegates: [InotifyEventDelegate] = []
 
     init<PathType: Path>
-        (path: PathType,
-         events: [FileSystemEvent],
-         masks: [AddWatchMask],
-         fd fileDescriptor: FileDescriptor,
-         delegates: [InotifyEventDelegate]) throws {
+    (path: PathType,
+     events: [FileSystemEvent],
+     masks: [AddWatchMask],
+     fd fileDescriptor: FileDescriptor,
+     delegates: [InotifyEventDelegate]) throws {
         guard !events.isEmpty else { throw InotifyError.AddWatchError.emptyEventMask }
 
         let watchDescriptor = inotify_add_watch(fileDescriptor, path.string, events.rawValue | masks.rawValue)

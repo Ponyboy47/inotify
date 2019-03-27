@@ -11,11 +11,11 @@ public struct FileSystemEvent: OptionSet, ExpressibleByIntegerLiteral {
     /// File was accessed (e.g., read(2), execve(2)).
     public static let access = FileSystemEvent(integerLiteral: IN_ACCESS)
     /**
-    Metadata changed—for example, permissions (e.g., chmod(2)), timestamps
-    (e.g., utimensat(2)), extended attributes (setxattr(2)), link count (since
-    Linux 2.6.25; e.g., for the target of link(2) and for unlink(2)), and
-    user/group ID (e.g., chown(2)).
-    */
+     Metadata changed—for example, permissions (e.g., chmod(2)), timestamps
+     (e.g., utimensat(2)), extended attributes (setxattr(2)), link count (since
+     Linux 2.6.25; e.g., for the target of link(2) and for unlink(2)), and
+     user/group ID (e.g., chown(2)).
+     */
     public static let attribute = FileSystemEvent(integerLiteral: IN_ATTRIB)
     /// File opened for writing was closed.
     public static let closeWrite = FileSystemEvent(integerLiteral: IN_CLOSE_WRITE)
@@ -24,12 +24,12 @@ public struct FileSystemEvent: OptionSet, ExpressibleByIntegerLiteral {
     /// Equates to .closeWrite | .closeNoWrite
     public static let close = FileSystemEvent(integerLiteral: IN_CLOSE)
     /**
-    Watched file/directory was itself deleted. (This event also occurs if an
-    object is moved to another filesystem, since mv(1) in effect copies the
-    file to the other filesystem and then devares it from the original
-    filesystem.) In addition, an IN_IGNORED event will subsequently be
-    generated for the watch descriptor.
-    */
+     Watched file/directory was itself deleted. (This event also occurs if an
+     object is moved to another filesystem, since mv(1) in effect copies the
+     file to the other filesystem and then devares it from the original
+     filesystem.) In addition, an IN_IGNORED event will subsequently be
+     generated for the watch descriptor.
+     */
     public static let delete = FileSystemEvent(integerLiteral: IN_DELETE_SELF)
     /// File was modified (e.g., write(2), truncate(2)).
     public static let modify = FileSystemEvent(integerLiteral: IN_MODIFY)

@@ -1,18 +1,18 @@
 import func Cinotify.inotify_init1
 import func Cinotify.inotify_rm_watch
-import protocol TrailBlazer.Path
-import struct TrailBlazer.GenericPath
+import struct Dispatch.DispatchQoS
+import class Dispatch.DispatchQueue
+import class Dispatch.DispatchWorkItem
 import func Glibc.close
 import func Glibc.read
-import class Dispatch.DispatchQueue
-import struct Dispatch.DispatchQoS
-import class Dispatch.DispatchWorkItem
+import struct TrailBlazer.GenericPath
+import protocol TrailBlazer.Path
 
 public final class Inotify {
     public let fileDescriptor: FileDescriptor
     private var watchers = Set<InotifyWatcher>()
     private var _buffer = ReadableRingBuffer(size: InotifyEvent.maxSize)
-    private var _work: DispatchWorkItem? = nil
+    private var _work: DispatchWorkItem?
     public var isRunning: Bool { return _work != nil }
 
     public init(flags: [InotifyInitFlag]) throws {
@@ -30,10 +30,10 @@ public final class Inotify {
     @discardableResult
     public func watch<PathType: Path,
                       DelegateType: InotifyEventDelegate>
-                      (path: PathType,
-                       for events: [FileSystemEvent],
-                       with masks: [AddWatchMask] = [],
-                       notify delegates: [DelegateType]) throws -> InotifyWatcherID {
+    (path: PathType,
+     for events: [FileSystemEvent],
+     with masks: [AddWatchMask] = [],
+     notify delegates: [DelegateType]) throws -> InotifyWatcherID {
         var watcher: InotifyWatcher
         let genericPath = GenericPath(path)
 
@@ -58,36 +58,36 @@ public final class Inotify {
     @discardableResult
     public func watch<PathType: Path,
                       DelegateType: InotifyEventDelegate>
-                      (path: PathType,
-                       for events: [FileSystemEvent],
-                       with masks: [AddWatchMask] = [],
-                       notify delegate: DelegateType) throws -> InotifyWatcherID {
+    (path: PathType,
+     for events: [FileSystemEvent],
+     with masks: [AddWatchMask] = [],
+     notify delegate: DelegateType) throws -> InotifyWatcherID {
         return try watch(path: path, for: events, with: masks, notify: [delegate])
     }
 
     @discardableResult
     public func watch<DelegateType: InotifyEventDelegate>
-                      (path: String,
-                       for events: [FileSystemEvent],
-                       with masks: [AddWatchMask] = [],
-                       notify delegates: [DelegateType]) throws -> InotifyWatcherID {
+    (path: String,
+     for events: [FileSystemEvent],
+     with masks: [AddWatchMask] = [],
+     notify delegates: [DelegateType]) throws -> InotifyWatcherID {
         return try watch(path: GenericPath(path), for: events, with: masks, notify: delegates)
     }
 
     @discardableResult
     public func watch<DelegateType: InotifyEventDelegate>
-                      (path: String,
-                       for events: [FileSystemEvent],
-                       with masks: [AddWatchMask] = [],
-                       notify delegate: DelegateType) throws -> InotifyWatcherID {
+    (path: String,
+     for events: [FileSystemEvent],
+     with masks: [AddWatchMask] = [],
+     notify delegate: DelegateType) throws -> InotifyWatcherID {
         return try watch(path: path, for: events, with: masks, notify: [delegate])
     }
 
     public func watch<DelegateType: InotifyEventDelegate>
-                     (watcherID: InotifyWatcherID,
-                      for events: [FileSystemEvent],
-                      with masks: [AddWatchMask] = [],
-                      notify delegates: [DelegateType]) throws {
+    (watcherID: InotifyWatcherID,
+     for events: [FileSystemEvent],
+     with masks: [AddWatchMask] = [],
+     notify delegates: [DelegateType]) throws {
         guard let index = watchers.firstIndex(where: { $0.id == watcherID }) else {
             throw InotifyError.UnwatchError.noWatcherWithIdentifier(watcherID)
         }
@@ -105,10 +105,10 @@ public final class Inotify {
     }
 
     public func watch<DelegateType: InotifyEventDelegate>
-                     (watcherID: InotifyWatcherID,
-                      for events: [FileSystemEvent],
-                      with masks: [AddWatchMask] = [],
-                      notify delegate: DelegateType) throws {
+    (watcherID: InotifyWatcherID,
+     for events: [FileSystemEvent],
+     with masks: [AddWatchMask] = [],
+     notify delegate: DelegateType) throws {
         try self.watch(watcherID: watcherID, for: events, with: masks, notify: [delegate])
     }
 
@@ -200,7 +200,7 @@ public final class Inotify {
     }
 }
 
-fileprivate extension DispatchQoS {
+private extension DispatchQoS {
     var qosClass: DispatchQoS.QoSClass {
         switch self {
         case .userInteractive: return .userInteractive
