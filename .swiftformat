@@ -9,7 +9,6 @@
 --hexgrouping none
 --octalgrouping none
 --exclude .build
---exclude Package.swift
 --header ""
 --allman false
 --enable blankLinesAtEndOfScope,blankLinesAtStartOfScope,blankLinesBetweenScopes,emptyBraces,isEmpty,redundantBackticks,redundantBreak,redundantExtensionACL,redundantFileprivate,redundantGet,redundantInit,redundantLet,redundantLetError,redundantNilInit,redundantParens,redundantPattern,redundantRawValues,redundantReturn,redundantVoidReturnType,spaceAroundBraces,spaceAroundComments,spaceAroundGenerics,spaceInsideBraces,spaceInsideComments,spaceInsideGenerics,spaceInsideParens,specifiers,todos,typeSugar
