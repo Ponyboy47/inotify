@@ -1,5 +1,5 @@
 # Inotify
-![Version](https://img.shields.io/badge/inotify-v1.0.1-blue.svg) [![Build Status](https://travis-ci.org/Ponyboy47/inotify.svg?branch=master)](https://travis-ci.org/Ponyboy47/inotify) ![Platforms](https://img.shields.io/badge/platform-linux-lightgrey.svg) ![Swift Version](https://img.shields.io/badge/swift%20version-5.0-orange.svg)
+![Version](https://img.shields.io/badge/inotify-v1.0.2-blue.svg) [![Build Status](https://travis-ci.org/Ponyboy47/inotify.svg?branch=master)](https://travis-ci.org/Ponyboy47/inotify) ![Platforms](https://img.shields.io/badge/platform-linux-lightgrey.svg) ![Swift Version](https://img.shields.io/badge/swift%20version-5.0.1-orange.svg)
 
 A swifty wrapper around Linux's inotify API. Trying to make using inotify in Swift as easy as possible.
 
@@ -20,7 +20,7 @@ Annoyed with the lack of FileSystemEvent notifications in Swift on Linux that ar
 ## Installation (SPM):
 Add this to your Package.swift:
 ```swift
-.package(url: "https://github.com/Ponyboy47/inotify.git", from: "1.0.1")
+.package(url: "https://github.com/Ponyboy47/inotify.git", from: "1.0.2")
 ```
 
 ## Usage:
@@ -126,5 +126,5 @@ None, but file an issue if you come across any :)
   - [ ] poll
   - [ ] epoll
 - [x] Make watchers more modular (so that others could easily write their own custom ones)
-- [ ] Handle inotify event cookie values (see inotify(7))
+- [x] Handle inotify event cookie values (see inotify(7))
 - [ ] Automatically set up recursive watchers (Since by default inotify only monitors one directory deep)
